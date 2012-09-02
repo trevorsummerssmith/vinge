@@ -1,1 +1,1 @@
-""" The vinge module goes here. "
+""" The vinge module goes here. """
