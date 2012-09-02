@@ -33,16 +33,18 @@ class LogLineVertex(Vertex):
     """
     Vertex used to represent the log line itself.
     """
-    def __init__(self, line, line_number, thread_id, time):
+    def __init__(self, line, message, line_number, thread_id, time):
         """
         Args:
-            line (str) Actual log line
+            line (str) Untouched log line from the original file
+            message (str) message portion of the file
             line_number (int) 0 based index in original file
             thread_id (str) If relevant, thread identifier
-            time (int) millis since epoch
+            time (datetime.datetime)
         """
         # TODO(trevor) should these be optional?
         self.line = line
+        self.message = message
         self.line_number = line_number
         self.thread_id = thread_id
         self.time = time
@@ -51,7 +53,10 @@ class LogLineVertex(Vertex):
         return NodeType.Left
 
     def __repr__(self):
-        return '%d: %s' % (self.line_number, self.line)
+        return "%d: %s '%s' '%s' %s" % (self.line_number, self.line, self.thread_id, self.message, self.time)
+
+    def __eq__(self, other):
+        return self.line == other.line
 
 class UniqueIDVertex(Vertex):
     """
@@ -70,6 +75,9 @@ class UniqueIDVertex(Vertex):
     def __repr__(self):
         return '<%s>' % self.id
 
+    def __eq__(self, other):
+        return self.id == other.id
+
 class TagVertex(Vertex):
     """
     Vertex used to represent a word.
@@ -79,7 +87,7 @@ class TagVertex(Vertex):
         Args:
           word (str) the tag
           thread_id (str) thread id the word appeared with
-          time (int) millis since epoch the tag appeared with
+          time (datetime.datetime)
         """
         self.word = word # maybe throw in normalization here?
         self.thread_id = thread_id
@@ -90,3 +98,8 @@ class TagVertex(Vertex):
 
     def __repr__(self):
         return '<%s,%s,%s>' % (self.word, self.thread_id, self.time)
+
+    def __eq__(self, other):
+        return (self.word == other.word and
+                self.thread_id == other.thread_id and
+                self.time == other.time)
