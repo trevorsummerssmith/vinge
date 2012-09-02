@@ -40,7 +40,7 @@ def tokenize(string):
     """
     ret = []
     # For now we tokenize based upon space
-    tokens = string.split(' ')
+    tokens = string.split()
     for token in tokens:
         token_type = TokenType.TAG
         if is_token_id(token):
