@@ -64,13 +64,11 @@ def parse_log(lines):
     log_lines = []
     tag_map = {}
     id_map = {}
-    line_number = 0
-    for line in lines:
+    for line_number, line in enumerate(lines):
         line = line.rstrip()
         ret = _parse_log_line(line)
         # TODO(trevor) for now skip non conforming lines
         if ret is None:
-            line_number += 1
             continue
         (dt, thread_id, msg) = ret
 
@@ -89,9 +87,4 @@ def parse_log(lines):
             this_list = this_map.get(token, [])
             this_list.append(vertex)
             this_map[token] = this_list
-        line_number += 1
     return (log_lines, tag_map, id_map)
-
-if __name__ == '__main__':
-    import sys
-    parse_log_file(sys.argv[1])
