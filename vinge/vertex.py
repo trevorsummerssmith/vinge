@@ -86,26 +86,23 @@ class TagVertex(Vertex):
     """
     Vertex used to represent a word.
     """
-    def __init__(self, word, thread_id, time):
+    def __init__(self, word, time):
         """
         Args:
           word (str) the tag
-          thread_id (str) thread id the word appeared with
           time (datetime.datetime)
         """
-        self.word = word # maybe throw in normalization here?
-        self.thread_id = thread_id
+        self.word = word
         self.time = time
 
     def nodetype(self):
         return NodeType.Right
 
     def __repr__(self):
-        return '<%s,%s,%s>' % (self.word, self.thread_id, self.time)
+        return '<%s,%s>' % (self.word, self.time)
 
     def __eq__(self, other):
         if type(other) is not TagVertex:
             return False
         return (self.word == other.word and
-                self.thread_id == other.thread_id and
                 self.time == other.time)
