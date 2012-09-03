@@ -13,6 +13,7 @@ def make_graph(loglines, tag_map, id_map, time_weighting, adjacent_logline_edge_
         if oldll is not None:
             g.add_edge(oldll, ll, weight=adjacent_logline_edge_weight)
             g.add_edge(ll, oldll, weight=adjacent_logline_edge_weight)
+        oldll = ll
 
     for id in id_map:
         v = UniqueIDVertex(id)
