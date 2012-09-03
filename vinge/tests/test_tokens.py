@@ -25,18 +25,30 @@ class TestTokens:
         string = "bar 439dc5a0-f544-11e1-a21f-0800200c9a66 888abklj"
         tokens = tokenize(string)
         assert tokens == [("bar", TokenType.TAG),
+                          (" ", TokenType.SPLITTER),
                           ("439dc5a0-f544-11e1-a21f-0800200c9a66", TokenType.ID),
+                          (" ", TokenType.SPLITTER),
                           ("888abklj", TokenType.TAG)]
 
     def test_tokenize_uuid_urn_words(self):
         string = "okthen urn:foo f93f3a70-f543-11e1-a21f-0800200c9a66 blarg"
         tokens = tokenize(string)
         assert tokens == [("okthen", TokenType.TAG),
+                          (" ", TokenType.SPLITTER),
                           ("urn:foo", TokenType.ID),
+                          (" ", TokenType.SPLITTER),
                           ("f93f3a70-f543-11e1-a21f-0800200c9a66", TokenType.ID),
+                          (" ", TokenType.SPLITTER),
                           ("blarg", TokenType.TAG)]
 
     def test_tokenize_skips_stop_word(self):
         tokens = tokenize("bar the it is foo")
-        assert tokens == [("bar", TokenType.TAG), ("foo", TokenType.TAG)]
-
+        assert tokens == [("bar", TokenType.TAG),
+                          (" ", TokenType.SPLITTER),
+                          ("the", TokenType.STOP_WORD),
+                          (" ", TokenType.SPLITTER),
+                          ("it", TokenType.STOP_WORD),
+                          (" ", TokenType.SPLITTER),
+                          ("is", TokenType.STOP_WORD),
+                          (" ", TokenType.SPLITTER),
+                          ("foo", TokenType.TAG)]

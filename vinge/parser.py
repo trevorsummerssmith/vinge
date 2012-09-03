@@ -82,8 +82,11 @@ def parse_log(lines):
         for (token, token_type) in tokens:
             if token_type == TokenType.TAG:
                 this_map = tag_map
-            else:
+            elif token_type == TokenType.ID:
                 this_map = id_map
+            else:
+                # Skip stop words and spaces
+                continue
             this_list = this_map.get(token, [])
             this_list.append(vertex)
             this_map[token] = this_list

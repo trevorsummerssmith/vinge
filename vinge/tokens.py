@@ -8,7 +8,10 @@ class TokenType:
     wants to pay more attention to.
     """
     TAG = 1,
-    ID = 2
+    ID = 2,
+    STOP_WORD = 3,
+    # Set of characters we use to tokenize. Space, comma, equals, etc.
+    SPLITTER = 4
 
 ID_TOKEN_REGEXES = [
     # UUIDs
@@ -29,10 +32,13 @@ def is_token_id(string):
     return False
 
 def is_token_tag(string):
-    return (not is_token_id(string)) and (not is_stop_word(token))
+    return (not is_token_id(string)) and (not is_stop_word(string))
 
 def is_stop_word(string):
     return string in STOP_WORDS
+
+def is_splitter(string):
+    return re.match('[\s=,]+', string) is not None
 
 def tokenize(string):
     """
@@ -44,13 +50,19 @@ def tokenize(string):
         list of (str, TokenType)
     """
     ret = []
-    # For now we tokenize based upon space
-    tokens = string.split()
+    # TODO make sure you keep this in-sync with the is_splitter method above
+    tokens = re.split('([\s=,]+)', string)
+    # There can be empty strings at the beginning of the line from that
     for token in tokens:
+        # Throw away first empty guy
+        if token == '':
+            continue
         if is_token_id(token):
             token_type = TokenType.ID
         elif is_stop_word(token):
-            continue
+            token_type = TokenType.STOP_WORD
+        elif is_splitter(token):
+            token_type = TokenType.SPLITTER
         else:
             token_type = TokenType.TAG
         ret.append((token, token_type))
