@@ -82,7 +82,7 @@ class TagVertex(Vertex):
     """
     Vertex used to represent a word.
     """
-    def __init(self, word, thread_id, time):
+    def __init__(self, word, thread_id, time):
         """
         Args:
           word (str) the tag
