@@ -22,9 +22,9 @@ class TestTokens:
         assert tokens == [("368c6f60-f544-11e1-a21f-0800200c9a66", TokenType.ID)]
 
     def test_tokenize_one_uuid_with_two_words(self):
-        string = "hello 439dc5a0-f544-11e1-a21f-0800200c9a66 888abklj"
+        string = "bar 439dc5a0-f544-11e1-a21f-0800200c9a66 888abklj"
         tokens = tokenize(string)
-        assert tokens == [("hello", TokenType.TAG),
+        assert tokens == [("bar", TokenType.TAG),
                           ("439dc5a0-f544-11e1-a21f-0800200c9a66", TokenType.ID),
                           ("888abklj", TokenType.TAG)]
 
@@ -35,4 +35,8 @@ class TestTokens:
                           ("urn:foo", TokenType.ID),
                           ("f93f3a70-f543-11e1-a21f-0800200c9a66", TokenType.ID),
                           ("blarg", TokenType.TAG)]
+
+    def test_tokenize_skips_stop_word(self):
+        tokens = tokenize("bar the it is foo")
+        assert tokens == [("bar", TokenType.TAG), ("foo", TokenType.TAG)]
 

@@ -1,5 +1,7 @@
 import re
 
+from vinge.stop_words import STOP_WORDS
+
 class TokenType:
     """"
     Type of a token. Tag is a normal word, id is something special that one
@@ -27,7 +29,10 @@ def is_token_id(string):
     return False
 
 def is_token_tag(string):
-    return not is_token_id(string)
+    return (not is_token_id(string)) and (not is_stop_word(token))
+
+def is_stop_word(string):
+    return string in STOP_WORDS
 
 def tokenize(string):
     """
@@ -42,8 +47,11 @@ def tokenize(string):
     # For now we tokenize based upon space
     tokens = string.split()
     for token in tokens:
-        token_type = TokenType.TAG
         if is_token_id(token):
             token_type = TokenType.ID
+        elif is_stop_word(token):
+            continue
+        else:
+            token_type = TokenType.TAG
         ret.append((token, token_type))
     return ret
