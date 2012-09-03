@@ -48,6 +48,10 @@ def _parse_log_line(line):
                   microsecond=microseconds)
     return (dt, m.group(9), m.group(10))
 
+def _dict_map(dictionary, fn):
+    for (k,v) in dictionary.iteritems():
+        dictionary[k] = fn(v)
+
 def parse_log(lines):
     """
     Args:
@@ -87,7 +91,13 @@ def parse_log(lines):
             else:
                 # Skip stop words and spaces
                 continue
-            this_list = this_map.get(token, [])
-            this_list.append(vertex)
-            this_map[token] = this_list
+            # We use a set here so that a line which has a word more than once
+            # doesn't get counted twice
+            this_set = this_map.get(token, set())
+            this_set.add(vertex)
+            this_map[token] = this_set
+    # Turn the sets back to lists
+    _dict_map(tag_map, lambda s: list(s))
+    _dict_map(id_map, lambda s: list(s))
+
     return (log_lines, tag_map, id_map)

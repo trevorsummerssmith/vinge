@@ -2,7 +2,6 @@ import vinge
 from vinge.vertex import LogLineVertex
 from vinge.parser import *
 
-
 from datetime import datetime
 
 class TestParser:
@@ -79,3 +78,20 @@ class TestParser:
         # id map should be empty
         assert id_map == {'urn:bar' : [vertex1, vertex2],
                           'bf09c8a0-f54a-11e1-a21f-0800200c9a66' : [vertex1]}
+
+    def test_parse_log_with_tag_twice(self):
+        # if a tag appears twice in a log it should only be in the map once
+        lines = ["2012-09-01 03:21:20,305 INFO  [MyThread9] foo foo\n"]
+        (vertices, tag_map, id_map) = parse_log(lines)
+
+        # Build up vertex for answer
+        dt = datetime(year=2012, month=9, day=1, hour=3, minute=21, second=20, microsecond=305000)
+        vertex = LogLineVertex(lines[0].rstrip(), ' foo foo', 0, 'MyThread9', dt)
+        assert len(vertices) == 1
+        assert vertices == [vertex]
+
+        # tag map should have one entry
+        assert tag_map == {'foo' : [vertex]}
+
+        # id map should be empty
+        assert id_map == {}
