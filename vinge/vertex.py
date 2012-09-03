@@ -56,6 +56,8 @@ class LogLineVertex(Vertex):
         return "%d: %s '%s' '%s' %s" % (self.line_number, self.line, self.thread_id, self.message, self.time)
 
     def __eq__(self, other):
+        if type(other) is not LogLineVertex:
+            return False
         return self.line == other.line
 
 class UniqueIDVertex(Vertex):
@@ -76,6 +78,8 @@ class UniqueIDVertex(Vertex):
         return '<%s>' % self.id
 
     def __eq__(self, other):
+        if type(other) is not UniqueIDVertex:
+            return False
         return self.id == other.id
 
 class TagVertex(Vertex):
@@ -100,6 +104,8 @@ class TagVertex(Vertex):
         return '<%s,%s,%s>' % (self.word, self.thread_id, self.time)
 
     def __eq__(self, other):
+        if type(other) is not TagVertex:
+            return False
         return (self.word == other.word and
                 self.thread_id == other.thread_id and
                 self.time == other.time)
