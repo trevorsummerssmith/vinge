@@ -40,11 +40,11 @@ sparse matrix when possible) or into a scipy LinearOperator.
 
 References:
 
-[1] Ken Thompson, “Regular expression search algorithm,”
+[1] Ken Thompson, "Regular expression search algorithm",
 Communications of the ACM 11(6) (June 1968),
-pp. 419–422. http://doi.acm.org/10.1145/363347.363387 (PDF)
+pp. 419-422. http://doi.acm.org/10.1145/363347.363387 (PDF)
 
-[2] Russ Cox, “Regular Expression Matching Can Be Simple And Fast”,
+[2] Russ Cox, "Regular Expression Matching Can Be Simple And Fast",
 January 2007, http://swtch.com/~rsc/regexp/regexp1.html
 """
 
@@ -75,7 +75,7 @@ class FilterRegex(Regex):
         filter_values = np.zeros(self.nnodes)
         for i in xrange(self.nnodes):
             filter_values[i] = self.thefilter(i)
-        return sp.sparse.diags(filter_values, [0])
+        return sp.sparse.spdiags(filter_values, [0], self.nnodes, self.nnodes)
 
     def compile_into_linop(self):
         return LinearOperator((self.nnodes,self.nnodes), matvec=self.apply)
@@ -83,7 +83,7 @@ class FilterRegex(Regex):
     def apply(self, dist):
         dist2 = np.zeros(len(dist))
         for i in xrange(len(dist)):
-            dist2[i] = dist[i] * thefilter(i)
+            dist2[i] = dist[i] * self.thefilter(i)
         return dist2
 
 class DisjunctRegex(Regex):
