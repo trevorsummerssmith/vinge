@@ -3,8 +3,10 @@
 import sys
 import numpy as np
 import kct.argparse
+import kct.color
 
 from vinge.format import format_vertex
+from vinge.format import shorten_color_str
 from vinge.graph import make_graph
 from vinge.parser import parse_log_file
 
@@ -41,7 +43,9 @@ def main():
         nbrs = graph[posn]
         lookup = {}
         for i, nbr in enumerate(nbrs):
-            print i, graph[posn][nbr]['weight'], format_vertex(nbr)[:80]
+            print "%d %s %s" % (i,
+                                graph[posn][nbr]['weight'],
+                                shorten_color_str(format_vertex(nbr), 80))
             lookup[i] = nbr
         i = int(input('Go where? '))
         posn = lookup[i]

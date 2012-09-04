@@ -7,6 +7,21 @@ from vertex import LogLineVertex
 from vertex import TagVertex
 from vertex import UniqueIDVertex
 
+def shorten_color_str(string, len):
+    """
+    Shortens string to len provided. Ends with a default white text
+    and black background.
+
+    Args:
+        string (str)
+        len (int)
+
+    Returns: str
+    """
+    # TODO(trevor) this is quick for now. it should actually only remove
+    # only printable characters
+    return "%s%s" % (string[:len-1], default(''))
+
 def format_id(string):
     return red(string, attrs='bold')
 
