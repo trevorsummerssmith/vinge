@@ -3,6 +3,21 @@ import networkx as nx
 import numpy as np
 from vertex import UniqueIDVertex, TagVertex
 
+def normalize_graph(g):
+    '''For each vertex, normalize the weights of its out-edges so they
+    sum to 1.0. (Unless they sum to 0.0, in which case leave them
+    alone.) We assume that weights are non-negative.'''
+    for u in g.nodes_iter():
+        totwt = 0.0
+        for (_,_,edata) in g.edges_iter(u, data=True):
+            totwt += edata['weight']
+
+        if totwt > 0.0:
+            itotwt = 1.0 / totwt
+
+            for (_,v) in g.edges_iter(u):
+                g[u][v]['weight'] = itotwt * g[u][v]['weight'] 
+
 def make_graph(loglines, tag_map, id_map, time_weighting, adjacent_logline_edge_weight=1.0, logline_id_edge_weight=1.0, logline_tag_edge_weight=1.0):
 
     g = nx.DiGraph()
@@ -41,19 +56,7 @@ def make_graph(loglines, tag_map, id_map, time_weighting, adjacent_logline_edge_
             g.add_edge(ll, v, weight=logline_tag_edge_weight)
             g.add_edge(v, ll, weight=logline_tag_edge_weight)
                 
-    # normalize weights so they sum to 1.0
-    for u in g.nodes_iter():
-        totwt = 0.0
-        for (_,v,edata) in g.edges_iter(u, data=True):
-            totwt += edata['weight']
-
-#        assert(totwt > 0.0)
-
-        if totwt > 0.0:
-            itotwt = 1.0 / totwt
-
-            for (_,v) in g.edges_iter(u):
-                g[u][v]['weight'] = itotwt * g[u][v]['weight'] 
+    normalize_graph(g)
         
     g = nx.freeze(g)
     return g

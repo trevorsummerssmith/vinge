@@ -5,11 +5,20 @@ regex | regex
 regex *
 regex regex
 
+TODO [Need to think more carefully about which direction the regex is
+going. There is a conflict between the natural direction of the regex
+and the natural direction of matrix multiplication.]
+
 We wish to manipulate probability distributions over the nodes of a
 Markov chain. We also want to represent sets of weighted paths through
 the Markov chain, which are naturally represented as linear operators
-over distributions. Regexes are an intuitive way to specify such
-linear operators.
+over distributions: consider a matrix A, where the entry A_{ij} gives
+the total weight of paths in the path set which start at node #i and
+end at node #j. Multiplying such matrices then correctly concatenates
+all compatible paths from two path sets. Note that we consider these
+matrices operating on row-vectors, as is standard for Markov chains.
+
+Regexes are an intuitive way to specify such linear operators.
 
 Regexes are implemented as follows. This can be thought of as a
 generalization of the Thompson NFA algorithm for implementing regular
@@ -19,7 +28,10 @@ modern reader].
   - A filter is a function f from nodes to R, representing a set of
     paths of length zero (i.e., paths containing a single node and no
     edges). As a linear operator, it sends d[i] to f(node_i) *
-    d[i]. Filters correspond to diagonal matrices.
+    d[i]. Filters correspond to diagonal matrices. 
+
+    Filters can be thought of as the emission probabilities of a
+    time-dependent HMM.
 
   - Disjunction (regex | regex) is the union of two path sets. As a
     linear operator, this is implemented as the sum of the constituent
@@ -28,15 +40,28 @@ modern reader].
     concern, but users should be aware of this when crafting regular
     expressions.
 
-  - The Kleene star ... got lazy writing this ...
+  - The Kleene star (regex *) ... got lazy writing this ...
+
+    TODO [Need to think more carefully about how the transition matrix
+    of the Markov chain appears in the formulae.]
 
   - Concatentation (regex regex) represents the set of paths formable
-    by concatenating any path from the first path set with any path
-    from the second path set. This is implemented as the product of
-    the constituent linear operators.
+    by joining any path from the first path set with any path from the
+    second path set. The joining takes place along any edge of the
+    Markov chain, and is thus not the standard concatenation of paths
+    one might expect.
+
+    This is implemented as the product of three linear operators: the
+    linear operator of the first operand, the transition matrix of the
+    Markov chain, and the linear operator of the second operand.
 
 Regexes can be compiled, either into a matrix (implemented as a scipy
-sparse matrix when possible) or into a scipy LinearOperator.
+sparse matrix when possible, and as a numpy matrix otherwise) or into
+a scipy LinearOperator, which should be far more efficient. The
+LinearOperators are the transposes of the matrices, since
+LinearOperators are designed to be used like (x -> Ax) rather than (x
+-> xA). The second fits more naturally with Markov chains and the
+semantics of regular expressions.
 
 References:
 
@@ -53,6 +78,31 @@ import networkx as nx
 import scipy as sp
 from scipy.sparse.linalg import LinearOperator, aslinearoperator
 
+# multiply linear operators
+def mul(a,b):
+    def matvec(v):
+        return a.matvec(b.matvec(v))
+    return LinearOperator(a.shape, matvec=matvec)
+
+# add linear operators
+def add(a,b):
+    def matvec(v):
+        return a.matvec(v) + b.matvec(v)
+    return LinearOperator(a.shape, matvec=matvec)
+
+# subtract linear operators
+def sub(a,b):
+    def matvec(v):
+        return a.matvec(v) - b.matvec(v)
+    return LinearOperator(a.shape, matvec=matvec)
+
+# multiply linear operator by scalar
+def scl(a,s):
+    def matvec(v):
+        return s * a.matvec(v)
+    return LinearOperator(a.shape, matvec=matvec)
+
+
 # TODO make this a proper abstract class
 class Regex:
     def compile_into_matrix(self):
@@ -63,6 +113,19 @@ class Regex:
 
     def apply(self, dist):
         raise NotImplemented
+
+class TrivialRegex(Regex):
+    def __init__(self, nnodes):
+        self.nnodes = nnodes
+
+    def compile_into_matrix(self):
+        return sp.sparse.eye(self.nnodes, self.nnodes)
+
+    def compile_into_linop(self):
+        return LinearOperator((self.nnodes, self.nnodes), matvec=self.apply)
+
+    def apply(self, dist):
+        return dist.copy()
 
 class FilterRegex(Regex):
     def __init__(self, nnodes, thefilter):
@@ -86,6 +149,7 @@ class FilterRegex(Regex):
             dist2[i] = dist[i] * self.thefilter(i)
         return dist2
 
+#TODO: do we want to specify weights on the alternatives?
 class DisjunctRegex(Regex):
     def __init__(self, poss1, poss2):
         self.poss1 = poss1
@@ -99,43 +163,91 @@ class DisjunctRegex(Regex):
     def compile_into_linop(self):
         op1 = self.poss1.compile_into_linop()
         op2 = self.poss2.compile_into_linop()
-        return op1 + op2
+        return add(op1,op2)
 
     def apply(self, dist):
         dist1 = self.poss1.apply(dist)
-        dist2 = self.poss1.apply(dist)
+        dist2 = self.poss2.apply(dist)
         return dist1 + dist2
 
 class StarRegex(Regex):
-    def __init__(self, nnodes, inside, length):
+    def __init__(self, transition, transition_op, nnodes, inside, length):
+        self.transition = transition
+        self.transition_op = transition_op
         self.nnodes = nnodes
         self.inside = inside
         self.length = length
-        self.p = 1.0 / self.length
+        self.pstop = 1.0 / self.length
+        self.pgo = 1.0 - self.pstop
 
     def compile_into_matrix(self):
-        # build inverse of matrix
-        inside = self.inside.compile_into_matrix()
-        eye = sp.sparse.eye(self.nnodes, self.nnodes)
-        invmat = (eye - self.p * inside) / (1-self.p)
+        # TODO: some of the intermediate matrices could be sparse, but
+        # they're not right now
 
-        # then invert
-        return np.linalg.inv(invmat)
+        # Let F be the node filter
+        fmat = self.inside.compile_into_matrix()
+        fmat = fmat.todense()
+
+        # Let T be the transition matrix
+        tmat = self.transition.todense()
+        tmat = np.array(tmat)
+        print 'tmat', tmat.shape
+
+        # The matrix we want is:
+        # X =  (1-p) F + (1-p)p FTF + (1-p)p^2 FTFTF + (1-p)p^3 FTFTFTF + ...
+        #   = (1-p) F (I + p TF + p^2 TFTF + p^3 TFTFTF + ...)
+        #   = (1-p) F (I - p TF)^{-1}
+        # (here p is self.pgo)
+
+        # But the last step only works if all eigenvalues of pTF have
+        # absolute value < 1, and preferably a decent bit away from 1,
+        # like < 0.9. So, let's check that.
+        ptfmat = self.pgo * np.dot(tmat, fmat)
+        ptfmat_ = np.matrix(ptfmat)
+        eigenvals, _ = np.linalg.eig(ptfmat_)
+        assert (abs(eigenvals) <= 0.9).all()
+
+        # Let Y = (I - p TF)
+        ymat = np.eye(self.nnodes, self.nnodes) - ptfmat
+        yinv = np.array(np.linalg.inv(ymat))
+
+        # Let X = (1-p) F Y^{-1}
+        xmat = self.pstop * np.dot(fmat, yinv)
+
+        xmat = xmat.A
+
+        return xmat
 
     def compile_into_linop(self):
-        # build inverse of the operator
-        inside = self.inside.compile_into_linop()
-        eye = aslinearoperator(sp.sparse.eye(self.nnodes, self.nnodes))
-        invop = (eye - self.p * inside) / (1-self.p)
+        # This is not commented very much, look at compile_into_matrix
+        # for explanation. But note that linear operators are
+        # transposed, so the details are a little different.
 
-        # guess the inverse of the inverse of the operator (i.e.,
-        # approximate the operator)
-        precond = (eye + self.p * inside) / (1-self.p)
+        fop = self.inside.compile_into_linop()
+        top = self.transition_op
+        pftop = scl(mul(fop,top), self.pgo)
+
+        # TODO add eigenvalue check???
+
+        # Y = (I - p FT)
+        eye = aslinearoperator(sp.sparse.eye(self.nnodes, self.nnodes))
+        yop = sub(eye, pftop)
+
+        # guess Y^{-1} = (I + p FT) to speed up convergence below
+        # TODO: maybe make a better guess? 
+        precond = add(eye, pftop)
 
         def matvec(v):
-            # get the operator by using conjugate gradient iteration
-            # to find inverse of inverse
-            x,info = sp.sparse.linalg.cg(inside, v, M=precond)
+            # ultimately want (1-p) Y^{-1} F v = Y^{-1} * (1-p)F v
+            # so let's just get (1-p) F v:
+            v = fop.matvec(v)
+            v = self.pstop * v
+
+            # calculate x = Y^{-1} v
+            # by using conjugate gradient iteration to solve linear
+            # equation Y x = v
+            x,info = sp.sparse.linalg.cg(yop, v, M=precond)
+            # check that cg converged etc.
             assert(info == 0)
             return x
 
@@ -146,20 +258,26 @@ class StarRegex(Regex):
         return linop.matvec(dist)
 
 class ConcatRegex(Regex):
-    def __init__(self, part1, part2):
+    def __init__(self, transition, transition_op, part1, part2):
+        self.transition = transition
+        self.transition_op = transition_op
         self.part1 = part1
         self.part2 = part2
 
     def compile_into_matrix(self):
         mat1 = self.part1.compile_into_matrix() 
         mat2 = self.part2.compile_into_matrix()
-        return mat1 * mat2
+        return mat1 * self.transition * mat2
 
     def compile_into_linop(self):
         op1 = self.part1.compile_into_linop() 
         op2 = self.part2.compile_into_linop()
-        return op1 * op2
+
+        # backwards because operators are transposed
+        return mul(op2, mul(self.transition_op, op1))
 
     def apply(self, dist):
-        dist2 = self.part2.apply(dist)
-        return self.part1.apply(dist2)
+        dist2 = self.part1.apply(dist)
+        dist2 = dist2 * self.transition
+        dist2 = self.part2.apply(dist2)
+        return dist2
