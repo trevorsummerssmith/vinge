@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from vinge.graph import make_graph
+from vinge.graph import EdgeType, make_graph
 from vinge.vertex import LogLineVertex, TagVertex, UniqueIDVertex
 
 def time_weighting(t1, t2):
@@ -8,6 +8,27 @@ def time_weighting(t1, t2):
 
 def assert_lists_equal(list1, list2):
     assert sorted(list1) == sorted(list2)
+
+def edge(v1, v2, weight=1.0, edge_type=None):
+    # Helper that auto figures out what edge type to use
+    # if edge_type is set to None
+    if edge_type is None:
+        # Data to Meta
+        if isinstance(v1, LogLineVertex):
+            if isinstance(v2, TagVertex) or isinstance(v2, UniqueIDVertex):
+                edge_type = EdgeType.DATA_TO_META
+        # Meta to Data
+        elif ((isinstance(v1, TagVertex) or isinstance(v1, UniqueIDVertex))
+              and isinstance(v2, LogLineVertex)):
+            edge_type = EdgeType.META_TO_DATA
+        # Tag to tag (meta to meta)
+        elif isinstance(v1, TagVertex) and isinstance(v2, TagVertex):
+            edge_type = EdgeType.META_TO_META
+        else:
+            raise Error("unkonwn edge type")
+    else:
+        print "EDGE TYPE IS NOT NONE: %s"%edge_type
+    return (v1, v2, {'weight' : weight, 'edge_type' : edge_type})
 
 class TestGraph:
 
@@ -25,8 +46,8 @@ class TestGraph:
         assert len(graph.nodes()) == 2
         assert_lists_equal(graph.nodes(), [vertex, tag_vertex])
         assert_lists_equal(graph.edges(data=True),
-                           [(vertex, tag_vertex, {'weight' : 1.0}),
-                            (tag_vertex, vertex, {'weight' : 1.0})])
+                           [edge(vertex, tag_vertex),
+                            edge(tag_vertex, vertex)])
 
     def test_graph_with_two_lines_share_tag(self):
         lines = ["2012-09-01 03:21:20,305 INFO  [MyThread9] foo\n",
@@ -45,20 +66,17 @@ class TestGraph:
         assert len(graph.nodes()) == 4
         assert_lists_equal(graph.nodes(), [vertex1, vertex2, tag_vertex1, tag_vertex2])
         edges = graph.edges(data=True)
-        assert len(edges) == 8
-        # The edge weights are normalized so that they sum to 1
         assert_lists_equal(edges,
-                           # Log line to tag edges
-                           [(vertex1, tag_vertex1, {'weight' : 0.5}),
-                            (tag_vertex1, vertex1, {'weight' : 0.5}),
-                            (vertex2, tag_vertex2, {'weight' : 0.5}),
-                            (tag_vertex2, vertex2, {'weight' : 0.5}),
+                           [edge(vertex1, tag_vertex1, 0.5),
+                            edge(tag_vertex1, vertex1, 0.5),
+                            edge(vertex2, tag_vertex2, 0.5),
+                            edge(tag_vertex2, vertex2, 0.5),
                             # Tag to tag edges
-                            (tag_vertex1, tag_vertex2, {'weight' : 0.5}),
-                            (tag_vertex2, tag_vertex1, {'weight' : 0.5}),
+                            edge(tag_vertex1, tag_vertex2, 0.5),
+                            edge(tag_vertex2, tag_vertex1, 0.5),
                             # Log line to log line edges
-                            (vertex1, vertex2, {'weight' : 0.5}),
-                            (vertex2, vertex1, {'weight' : 0.5})])
+                            edge(vertex1, vertex2, 0.5, EdgeType.ADJACENT_NEXT),
+                            edge(vertex2, vertex1, 0.5, EdgeType.ADJACENT_PREV)])
 
     def test_graph_with_two_lines_share_id(self):
         lines = ["2012-09-01 03:21:20,305 INFO  [MyThread9] urn:9\n",
@@ -79,11 +97,11 @@ class TestGraph:
         assert len(edges) == 6
         # The edge weights are normalized so that they sum to 1
         assert_lists_equal(edges,
-                           [(vertex1, id_vertex, {'weight' : 0.5}),
-                            (id_vertex, vertex1, {'weight' : 0.5}),
-                            (vertex2, id_vertex, {'weight' : 0.5}),
-                            (id_vertex, vertex2, {'weight' : 0.5}),
+                           [edge(vertex1, id_vertex, 0.5),
+                            edge(id_vertex, vertex1, 0.5),
+                            edge(vertex2, id_vertex, 0.5),
+                            edge(id_vertex, vertex2, 0.5),
                             # Log line to log line edges
-                            (vertex1, vertex2, {'weight' : 0.5}),
-                            (vertex2, vertex1, {'weight' : 0.5})
+                            edge(vertex1, vertex2, 0.5, EdgeType.ADJACENT_NEXT),
+                            edge(vertex2, vertex1, 0.5, EdgeType.ADJACENT_PREV)
                             ])
