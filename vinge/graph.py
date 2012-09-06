@@ -52,7 +52,8 @@ def make_graph(loglines, tag_map, id_map, time_weighting, adjacent_logline_edge_
     for tag in tag_map:
         v, oldv = None, None
 
-        for ll in tag_map[tag]:
+        the_tag_occurrences = sorted(list(tag_map[tag]))
+        for ll in the_tag_occurrences:
             oldv = v
             v = TagVertex(tag, ll.time)
             g.add_node(v)
