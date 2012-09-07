@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+
+import sys
+import numpy as np
+import scipy as sp
+import networkx as nx
+import kct.argparse
+import kct.color
+
+from vinge.format import format_vertex
+from vinge.format import shorten_color_str
+from vinge.graph import make_graph
+from vinge.parser import parse_log_file
+
+from vinge.vertex import LogLineVertex, TagVertex, UniqueIDVertex
+from vinge.filter import FilterSet, Filter
+from vinge.regex import FilterRegex, ConcatRegex, StarRegex, TrivialRegex
+import vinge
+
+def time_weighting(t1,t2):
+    tdelta = -abs(t2-t1)
+    return np.exp(0.0001 * tdelta.total_seconds())
+
+def main():
+    desc = 'vinge: providing next level vernor vinge automation'
+    parser = kct.argparse.ArgumentParser(description=desc)
+    parser.add_argument('file', help='Log file to parse')
+    parser.add_argument('line-number',
+                        help='Number in the file on which to start')
+    args = parser.parse_args(sys.argv[1:])
+
+    # Parse the file and make the graph
+    (log_line_vertices, tag_map, id_map) = parse_log_file(args.file)
+    graph = make_graph(log_line_vertices, tag_map, id_map, time_weighting)
+
+    transition = nx.to_scipy_sparse_matrix(graph)
+    transition_op = sp.sparse.linalg.aslinearoperator(transition)
+
+    for i, node in enumerate(graph.nodes_iter()):
+        node.vertex_id = i
+
+    # Do this kind of janky thing for now -- take the log line number to start
+    # on at the beginning. Later on we will change this.
+    log_line_number = int(getattr(args, 'line-number'))
+    posn = None
+    for ll in log_line_vertices:
+        if ll.line_number == log_line_number:
+            posn = ll
+    if posn == None:
+        print 'unknown line number'
+        sys.exit(-1)
+
+    is_tag_filter = Filter(FilterRegex(graph.number_of_nodes(), vinge.filter.is_tag, graph), graph)
+    num_es_filter = Filter(FilterRegex(graph.number_of_nodes(), vinge.filter.number_of_es, graph), graph)
+
+    ll_reach_regex = ConcatRegex(transition, transition_op, 
+                                 FilterRegex(graph.number_of_nodes(), vinge.filter.is_line, graph), 
+                                 StarRegex(transition, transition_op, graph.number_of_nodes(),
+                                           TrivialRegex(graph.number_of_nodes()),
+                                           length=3.0)
+                                 )
+    ll_reach_filter = Filter(ll_reach_regex, graph)
+
+    filter_set = FilterSet(graph)
+    filter_set.add_filter('is_tag', is_tag_filter)
+    filter_set.add_filter('number_of_es', num_es_filter)
+    filter_set.add_filter('ll_reach', ll_reach_filter)
+
+    filter_set.calculate_filters()
+
+    while True:
+        print format_vertex(posn)
+        print '_' * 10
+        nbrs = graph[posn]
+        lookup = {}
+        for i, nbr in enumerate(nbrs):
+            print "%d %s %s" % (i,
+                                graph[posn][nbr]['weight'],
+                                shorten_color_str(format_vertex(nbr), 80)),
+            print " " * 5,
+            print filter_set.describe_node(nbr)
+            lookup[i] = nbr
+        i = int(input('Go where? '))
+        posn = lookup[i]
+
+if __name__ == '__main__':
+    main()

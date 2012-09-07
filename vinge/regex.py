@@ -128,11 +128,12 @@ class TrivialRegex(Regex):
         return dist.copy()
 
 class FilterRegex(Regex):
-    def __init__(self, nnodes, thefilter):
+    def __init__(self, nnodes, thefilter, graph):
         ''' thefilter: maps integer ids to reals
         '''
         self.nnodes = nnodes 
         self.thefilter = thefilter
+        self.graph = graph
 
     def compile_into_matrix(self):
         filter_values = np.zeros(self.nnodes)
@@ -145,8 +146,8 @@ class FilterRegex(Regex):
 
     def apply(self, dist):
         dist2 = np.zeros(len(dist))
-        for i in xrange(len(dist)):
-            dist2[i] = dist[i] * self.thefilter(i)
+        for i, node in enumerate(self.graph.nodes_iter()):
+            dist2[i] = dist[i] * self.thefilter(node)
         return dist2
 
 #TODO: do we want to specify weights on the alternatives?
@@ -154,6 +155,7 @@ class DisjunctRegex(Regex):
     def __init__(self, poss1, poss2):
         self.poss1 = poss1
         self.poss2 = poss2
+        self.nnodes = poss1.nnodes
 
     def compile_into_matrix(self):
         mat1 = self.poss1.compile_into_matrix()
@@ -263,6 +265,7 @@ class ConcatRegex(Regex):
         self.transition_op = transition_op
         self.part1 = part1
         self.part2 = part2
+        self.nnodes = part1.nnodes
 
     def compile_into_matrix(self):
         mat1 = self.part1.compile_into_matrix() 
