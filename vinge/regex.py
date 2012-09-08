@@ -246,9 +246,9 @@ class StarRegex(Regex):
             v = self.pstop * v
 
             # calculate x = Y^{-1} v
-            # by using conjugate gradient iteration to solve linear
+            # by using LGMRES iteration to solve linear
             # equation Y x = v
-            x,info = sp.sparse.linalg.cg(yop, v, M=precond)
+            x,info = sp.sparse.linalg.lgmres(yop, v, M=precond)
             # check that cg converged etc.
             assert(info == 0)
             return x
