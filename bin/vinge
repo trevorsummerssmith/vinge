@@ -4,15 +4,43 @@ import sys
 import numpy as np
 import kct.argparse
 import kct.color
+import kct.output as output
 
+import vinge.cmd as cmd
+import vinge.history as history
+
+from vinge.context import Context
 from vinge.format import format_vertex
 from vinge.format import shorten_color_str
+from vinge.graph import EdgeType
 from vinge.graph import make_graph
 from vinge.parser import parse_log_file
+from vinge.repl import repl
 
 def time_weighting(t1,t2):
     tdelta = -abs(t2-t1)
     return np.exp(0.0001 * tdelta.total_seconds())
+
+def init(filename):
+    # Janky for now. Let's let this get some more structure then will
+    # bust it out.
+    # Parse the file and make the graph.
+    (log_line_vertices, tag_map, id_map) = parse_log_file(filename)
+    graph = make_graph(log_line_vertices, tag_map, id_map, time_weighting)
+    return (log_line_vertices, Context(graph))
+
+def janky_get_posn(ctx, log_line_vertices, log_line_number):
+    # Do this kind of janky thing for now -- take the log line number to start
+    # on at the beginning. Later on we will change this.
+    posn = None
+    for idx, ll in enumerate(log_line_vertices):
+        if ll.line_number == log_line_number:
+            posn = ll
+    if posn == None:
+        print 'unknown line number'
+        sys.exit(-1)
+    # return initial position
+    return posn
 
 def main():
     desc = 'vinge: providing next level vernor vinge automation'
@@ -23,32 +51,15 @@ def main():
     args = parser.parse_args(sys.argv[1:])
 
     # Parse the file and make the graph
-    (log_line_vertices, tag_map, id_map) = parse_log_file(args.file)
-    graph = make_graph(log_line_vertices, tag_map, id_map, time_weighting)
+    (log_line_vertices, ctx) = init(args.file)
+    posn = janky_get_posn(ctx, log_line_vertices, int(getattr(args, 'line-number')))
 
-    # Do this kind of janky thing for now -- take the log line number to start
-    # on at the beginning. Later on we will change this.
-    log_line_number = int(getattr(args, 'line-number'))
-    posn = None
-    for ll in log_line_vertices:
-        if ll.line_number == log_line_number:
-            posn = ll
-    if posn == None:
-        print 'unknown line number'
-        sys.exit(-1)
+    # go to the vertex selected on the command line
+    args = kct.argparse.Namespace(vertex=posn)
+    cmd.go_by_vertex(ctx, args)
 
-    while True:
-        print format_vertex(posn)
-        print '_' * 10
-        nbrs = graph[posn]
-        lookup = {}
-        for i, nbr in enumerate(nbrs):
-            print "%d %s %s" % (i,
-                                graph[posn][nbr]['weight'],
-                                shorten_color_str(format_vertex(nbr), 80))
-            lookup[i] = nbr
-        i = int(input('Go where? '))
-        posn = lookup[i]
+    # Get the repl ready and start it
+    repl(ctx)
 
 if __name__ == '__main__':
     main()
