@@ -8,7 +8,6 @@ Each public method should correspond to a user method on the repl
 (see repl.py).
 """
 
-import history
 from format import format_vertex
 from vinge.format import shorten_color_str
 from graph import EdgeType

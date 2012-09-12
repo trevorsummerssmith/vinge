@@ -7,7 +7,6 @@ import kct.color
 import kct.output as output
 
 import vinge.cmd as cmd
-import vinge.history as history
 
 from vinge.context import Context
 from vinge.format import format_vertex
