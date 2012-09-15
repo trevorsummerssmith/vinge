@@ -19,13 +19,83 @@ def normalize_graph(g):
                 g[u][v]['weight'] = itotwt * g[u][v]['weight'] 
 
 class EdgeType:
-    ADJACENT_PREV = 0,
-    ADJACENT_NEXT = 1,
-    DATA_TO_META = 2,
-    META_TO_DATA = 3,
-    META_TO_META = 4
+    """
+    This is a bit janky -- the enum types here make restrictions on what nodes
+    can use the different edges. Just be aware of this.
+    """
 
-def make_graph(loglines, tag_map, id_map, time_weighting, adjacent_logline_edge_weight=1.0, logline_id_edge_weight=1.0, logline_tag_edge_weight=1.0):
+    ADJACENT_PREV = 0,
+    """
+    LogLine to LogLine. Directional used to show the child node appeared
+    previous to the parent in the original file.
+    """
+
+    ADJACENT_NEXT = 1,
+    """
+    LogLine to LogLine. Directional used to show the child node appeared post
+    to the parent in the original file.
+    """
+
+    DATA_TO_META = 2,
+    """
+    LogLine to tag or id node.
+    """
+
+    META_TO_DATA = 3,
+    """
+    Tag or id node to LogLine.
+    """
+
+    META_TO_META = 4
+    """
+    Currently used for tag to tag.
+    """
+
+def make_graph(loglines,
+               tag_map,
+               id_map,
+               time_weighting,
+               adjacent_logline_edge_weight=1.0,
+               logline_id_edge_weight=1.0,
+               logline_tag_edge_weight=1.0):
+    """
+    Creates a digraph from the argument data.
+
+    The graph that is created has the following structure:
+      o LogLine nodes have one edge to their previous LogLine
+        and one to its next Logline. This is defined by their position
+        in the loglines array argument.
+      o LogLine nodes have one DATA_TO_META edge to every id node, based upon
+        the entry in the id_map argument.
+      o LogLine nodes have one DATA_TO_META edge to each tag node.
+
+      o Id nodes have one META_TO_DATA edge to each of their LogLine nodes.
+
+      o Tag nodes have one META_TO_DATA edge to each of their LogLine nodes.
+      o Tag nodes each have two META_TO_META edges -- one to the 'previous'
+        tag node and one to the 'next' tag node. 'next' and 'previous' are
+        defined by the TagVertex.time field.
+
+      o The graph is directed, but every directed edge has a corresponding
+        directed edge -- if an edge (u,v) exists then (v,u) (of some type)
+        exists.
+
+    TODO(trevor) once we're further along and we like this graph take a few
+    minutes and make a asciigraph example.
+
+    Args:
+        loglines see vinge.parser.parse_log return value
+        tag_map see vinge.parser.parse_log return value
+        id_map see vinge.parser.parse_log return value
+        time_weighting (fun (datetime.datetime, datetime.datetime) -> float)
+            function defining the weight between tag nodes
+        adjacent_logline_edge_weight (float)
+        logline_id_edge_weight (float)
+        logline_tag_edge_weight (float)
+
+    Returns:
+        networkx.DiGraph
+    """
 
     g = nx.DiGraph()
     g.add_nodes_from(loglines)
