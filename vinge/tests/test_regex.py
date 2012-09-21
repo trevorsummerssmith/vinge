@@ -64,7 +64,7 @@ class TestRegex:
         np.testing.assert_allclose(dist_mat, dist_linop)
 
     def test_starts_with_a_filter_regex(self):
-        re = FilterRegex(20, starts_with_a)
+        re = FilterRegex(20, starts_with_a, gf)
         re_mat = re.compile_into_matrix()
         re_linop = re.compile_into_linop()
 
@@ -86,7 +86,7 @@ class TestRegex:
         np.testing.assert_allclose(dist_mat, dist_linop)
 
     def test_length_filter_regex(self):
-        re = FilterRegex(20, length_filter)
+        re = FilterRegex(20, length_filter, gf)
         re_mat = re.compile_into_matrix()
         re_linop = re.compile_into_linop()
 
@@ -109,8 +109,8 @@ class TestRegex:
         np.testing.assert_allclose(dist_mat, dist_linop)
 
     def test_concat_filter_regex(self):
-        re1 = FilterRegex(20, length_filter)
-        re2 = FilterRegex(20, starts_with_a)
+        re1 = FilterRegex(20, length_filter, gf)
+        re2 = FilterRegex(20, starts_with_a, gf)
         re3 = ConcatRegex(transition, transition_op, re1, re2)
 
         re3_mat = re3.compile_into_matrix()
@@ -147,8 +147,8 @@ class TestRegex:
         np.testing.assert_allclose(dist_mat, dist_linop)
 
     def test_disjunct_filter_regex(self):
-        re1 = FilterRegex(20, length_filter)
-        re2 = FilterRegex(20, starts_with_a)
+        re1 = FilterRegex(20, length_filter, gf)
+        re2 = FilterRegex(20, starts_with_a, gf)
         re3 = DisjunctRegex(re1, re2)
 
         re3_mat = re3.compile_into_matrix()
