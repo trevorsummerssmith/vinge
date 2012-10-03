@@ -117,12 +117,16 @@ class Regex:
 class TrivialRegex(Regex):
     def __init__(self, nnodes):
         self.nnodes = nnodes
+        self._cached_linop = None
 
     def compile_into_matrix(self):
         return sp.sparse.eye(self.nnodes, self.nnodes)
 
     def compile_into_linop(self):
-        return LinearOperator((self.nnodes, self.nnodes), matvec=self.apply)
+        if self._cached_linop:
+            return self._cached_linop
+        self._cached_linop = LinearOperator((self.nnodes, self.nnodes), matvec=self.apply)
+        return self._cached_linop
 
     def apply(self, dist):
         return dist.copy()
@@ -134,6 +138,8 @@ class FilterRegex(Regex):
         self.nnodes = nnodes 
         self.thefilter = thefilter
         self.graph = graph
+        self._cached_linop = None
+
 
     def compile_into_matrix(self):
         filter_values = np.zeros(self.nnodes)
@@ -142,7 +148,10 @@ class FilterRegex(Regex):
         return sp.sparse.spdiags(filter_values, [0], self.nnodes, self.nnodes)
 
     def compile_into_linop(self):
-        return LinearOperator((self.nnodes,self.nnodes), matvec=self.apply)
+        if self._cached_linop:
+            return self._cached_linop
+        self._cached_linop = LinearOperator((self.nnodes,self.nnodes), matvec=self.apply)
+        return self._cached_linop
 
     def apply(self, dist):
         dist2 = np.zeros(len(dist))
@@ -156,6 +165,7 @@ class DisjunctRegex(Regex):
         self.poss1 = poss1
         self.poss2 = poss2
         self.nnodes = poss1.nnodes
+        self._cached_linop = None
 
     def compile_into_matrix(self):
         mat1 = self.poss1.compile_into_matrix()
@@ -163,9 +173,12 @@ class DisjunctRegex(Regex):
         return mat1 + mat2
 
     def compile_into_linop(self):
+        if self._cached_linop:
+            return self._cached_linop
         op1 = self.poss1.compile_into_linop()
         op2 = self.poss2.compile_into_linop()
-        return add(op1,op2)
+        self._cached_linop = add(op1,op2)
+        return self._cached_linop
 
     def apply(self, dist):
         dist1 = self.poss1.apply(dist)
@@ -181,6 +194,7 @@ class StarRegex(Regex):
         self.length = length
         self.pstop = 1.0 / self.length
         self.pgo = 1.0 - self.pstop
+        self._cached_linop = None
 
     def compile_into_matrix(self):
         # TODO: some of the intermediate matrices could be sparse, but
@@ -221,6 +235,9 @@ class StarRegex(Regex):
         return xmat
 
     def compile_into_linop(self):
+        if self._cached_linop:
+            return self._cached_linop
+
         # This is not commented very much, look at compile_into_matrix
         # for explanation. But note that linear operators are
         # transposed, so the details are a little different.
@@ -253,7 +270,8 @@ class StarRegex(Regex):
             assert(info == 0)
             return x
 
-        return LinearOperator((self.nnodes,self.nnodes), matvec=matvec)
+        self._cached_linop = LinearOperator((self.nnodes,self.nnodes), matvec=matvec)
+        return self._cached_linop
 
     def apply(self, dist):
         linop = self.compile_into_linop()
@@ -266,6 +284,8 @@ class ConcatRegex(Regex):
         self.part1 = part1
         self.part2 = part2
         self.nnodes = part1.nnodes
+        # TODO(Trevor) this is jank. put assert part1.nnodes == part2.nnodes at least
+        self._cached_linop = None
 
     def compile_into_matrix(self):
         mat1 = self.part1.compile_into_matrix() 
@@ -273,11 +293,13 @@ class ConcatRegex(Regex):
         return mat1 * self.transition * mat2
 
     def compile_into_linop(self):
-        op1 = self.part1.compile_into_linop() 
-        op2 = self.part2.compile_into_linop()
+        if not self._cached_linop:
+            op1 = self.part1.compile_into_linop()
+            op2 = self.part2.compile_into_linop()
 
-        # backwards because operators are transposed
-        return mul(op2, mul(self.transition_op, op1))
+            # backwards because operators are transposed
+            self._cached_linop = mul(op2, mul(self.transition_op, op1))
+        return self._cached_linop
 
     def apply(self, dist):
         dist2 = self.part1.apply(dist)
