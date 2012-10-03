@@ -2,10 +2,6 @@
 Data container classes for the graph.
 """
 
-from abc import ABCMeta
-from abc import abstractmethod
-from abc import abstractproperty
-
 class NodeType:
     Left = 1
     Right = 2
@@ -22,24 +18,20 @@ class NodeKind:
     NodeKindUniqueIDVertex = 1
     NodeKindTagVertex = 2
 
-class Vertex:
+class Vertex(object):
     """
-    Abstract class done the pythonic way.
-    see: http://docs.python.org/library/abc.html
+    Abstract class for Vertices
     """
-    __metaclass__ = ABCMeta
 
-    @abstractproperty
     def nodetype(self):
         """
         Must be overridden by subclasses. Must return either
         NodeType.Left, or NodeType.Rig
         """
-        pass
+        raise NotImplemented
 
-    @abstractmethod
     def __repr__(self):
-        pass
+        raise NotImplemented
 
 class LogLineVertex(Vertex):
     """
