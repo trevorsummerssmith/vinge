@@ -1,24 +1,24 @@
 import numpy as np
-from vinge.vertex import LogLineVertex, TagVertex, UniqueIDVertex
+from vinge.vertex import LogLineVertex, TagVertex, UniqueIDVertex, NodeKind
 
 def is_tag(v):
-    if isinstance(v, TagVertex):
+    if v.kind == NodeKind.NodeKindTagVertex:
         return 1.0
     else:
         return 0.0
 
 def is_line(v):
-    if isinstance(v, LogLineVertex):
+    if v.kind == NodeKind.NodeKindLogLineVertex:
         return 1.0
     else:
         return 0.0
 
 def number_of_es(v):
-    if isinstance(v, LogLineVertex):
+    if v.kind == NodeKind.NodeKindLogLineVertex:
         return v.message.lower().count('e')
-    if isinstance(v, UniqueIDVertex):
+    elif v.kind == NodeKind.NodeKindUniqueIDVertex:
         return 0.0
-    if isinstance(v, TagVertex):
+    elif v.kind == NodeKind.NodeKindTagVertex:
         return v.word.lower().count('e')
 
 class Filter:

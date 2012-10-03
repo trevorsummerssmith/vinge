@@ -10,6 +10,18 @@ class NodeType:
     Left = 1
     Right = 2
 
+class NodeKind:
+    """
+    Enum used to determine the type of the node.
+
+    N.b. originally we were using isinstance checks in the code
+    to determine the type of an instance. That turned out to be an insanely
+    costly. This is cheap.
+    """
+    NodeKindLogLineVertex = 0
+    NodeKindUniqueIDVertex = 1
+    NodeKindTagVertex = 2
+
 class Vertex:
     """
     Abstract class done the pythonic way.
@@ -48,6 +60,7 @@ class LogLineVertex(Vertex):
         self.line_number = line_number
         self.thread_id = thread_id
         self.time = time
+        self.kind = NodeKind.NodeKindLogLineVertex
 
     def nodetype(self):
         return NodeType.Left
@@ -75,6 +88,7 @@ class UniqueIDVertex(Vertex):
             id (str)
         """
         self.id = id
+        self.kind = NodeKind.NodeKindUniqueIDVertex
 
     def nodetype(self):
         return NodeType.Right
@@ -104,6 +118,7 @@ class TagVertex(Vertex):
         """
         self.word = word
         self.time = time
+        self.kind = NodeKind.NodeKindTagVertex
 
     def nodetype(self):
         return NodeType.Right
