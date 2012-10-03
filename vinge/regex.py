@@ -138,8 +138,18 @@ class FilterRegex(Regex):
         self.nnodes = nnodes 
         self.thefilter = thefilter
         self.graph = graph
+        self._filter_vector = self._create_filter_vector()
         self._cached_linop = None
 
+    def _create_filter_vector(self):
+        """
+        Applies self.thefilter to self.graph to make a vector of the results.
+        Returns: numpy.array
+        """
+        vector = np.zeros(self.graph.number_of_nodes())
+        for i, node in enumerate(self.graph.nodes_iter()):
+            vector[i] = self.thefilter(node)
+        return vector
 
     def compile_into_matrix(self):
         filter_values = np.zeros(self.nnodes)
@@ -154,10 +164,10 @@ class FilterRegex(Regex):
         return self._cached_linop
 
     def apply(self, dist):
-        dist2 = np.zeros(len(dist))
-        for i, node in enumerate(self.graph.nodes_iter()):
-            dist2[i] = dist[i] * self.thefilter(node)
-        return dist2
+        # self._filter_vector is a numpy array is '*' does element-wise
+        # multiplication
+        return dist * self._filter_vector
+
 
 #TODO: do we want to specify weights on the alternatives?
 class DisjunctRegex(Regex):
