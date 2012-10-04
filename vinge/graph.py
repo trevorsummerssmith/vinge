@@ -140,7 +140,12 @@ def make_graph(loglines,
             g.add_edge(v, ll, weight=logline_tag_edge_weight,
                        edge_type=EdgeType.META_TO_DATA)
                 
+    # Normalize edge weights
     normalize_graph(g)
+
+    # Add the vertex index to all nodes
+    for i, node in enumerate(g.nodes_iter()):
+        node._set_idx(i)
         
     g = nx.freeze(g)
     return g

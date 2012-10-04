@@ -36,9 +36,6 @@ def main():
     transition = nx.to_scipy_sparse_matrix(graph)
     transition_op = sp.sparse.linalg.aslinearoperator(transition)
 
-    for i, node in enumerate(graph.nodes_iter()):
-        node.vertex_id = i
-
     # Do this kind of janky thing for now -- take the log line number to start
     # on at the beginning. Later on we will change this.
     log_line_number = int(getattr(args, 'line-number'))

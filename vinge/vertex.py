@@ -20,7 +20,10 @@ class NodeKind:
 
 class Vertex(object):
     """
-    Abstract class for Vertices
+    Abstract class for Vertices.
+
+    A Vertex should be thought of as an immutable object that is part of a
+    single networkx graph.
     """
 
     def nodetype(self):
@@ -32,6 +35,28 @@ class Vertex(object):
 
     def __repr__(self):
         raise NotImplemented
+
+    def idx(self):
+        """
+        Index into a vertex representation of the networkx graph's nodes.
+        This is also the row and col index into an adjacency matrix
+        representation of a networkx graph.
+
+        E.g.
+          g # A graph
+          v # A vertex in g
+          m = networkx.to_scipy_sparse_matrix(g)
+          m[v.idx()]
+        """
+        return self._idx
+
+    def _set_idx(self, idx):
+        # Implementation note: this setter breaks the 'immutable' vertex
+        # constraint. However the index into the graph isn't available until
+        # it is added to a graph, so we have to set it post-creation.
+        #
+        # No one should actually call this except graph making code.
+        self._idx = idx
 
 class LogLineVertex(Vertex):
     """

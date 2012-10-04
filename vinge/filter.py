@@ -49,7 +49,7 @@ class FilterSet:
         #                              self.filters[name](node)) 
         #                 for name in self.filters)
         return " ".join("[%s=%f]" % (name, 
-                                     self.vals[name][node.vertex_id]) 
+                                     self.vals[name][node.idx()])
                         for name in self.filters)
 
     
