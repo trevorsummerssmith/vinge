@@ -82,3 +82,10 @@ class TestRegexParser:
     def test_unbalanced_paren(self):
         with pytest.raises(RegexParseException):
             compile_regex("(")
+
+    def test_not_logline(self):
+        # 'l' then we expect 'o' for logline, but give another letter.
+        # TODO(trevor) should figure out a more friendly way to propogate
+        # this error up, its kind of esoteric right now.
+        with pytest.raises(RegexParseException):
+            compile_regex("lkgline")

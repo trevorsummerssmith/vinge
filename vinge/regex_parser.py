@@ -55,7 +55,7 @@ class _Stream(object):
     def eat(self, expected):
         c = self.peek()
         if c != expected:
-            raise ValueError("expected '%s', got '%s'" % (expected, c))
+            _error("expected '%s', got '%s'" % (expected, c))
         self._idx += 1
 
     def eat_word(self, word):
