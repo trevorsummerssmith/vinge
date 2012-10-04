@@ -131,6 +131,11 @@ class TrivialRegex(Regex):
     def apply(self, dist):
         return dist.copy()
 
+    def __cmp__(self, other):
+        if not isinstance(other, TrivialRegex):
+            return cmp(self, other)
+        return cmp(self.nnodes, other.nnodes)
+
 class FilterRegex(Regex):
     def __init__(self, nnodes, thefilter, graph):
         ''' thefilter: maps integer ids to reals
@@ -168,6 +173,13 @@ class FilterRegex(Regex):
         # multiplication
         return dist * self._filter_vector
 
+    def __cmp__(self, other):
+        if not isinstance(other, FilterRegex):
+            return cmp(self, other)
+        else:
+            return cmp((self.nnodes, self.thefilter, self.graph),
+                       (other.nnodes, other.thefilter, other.graph))
+
 
 #TODO: do we want to specify weights on the alternatives?
 class DisjunctRegex(Regex):
@@ -194,6 +206,13 @@ class DisjunctRegex(Regex):
         dist1 = self.poss1.apply(dist)
         dist2 = self.poss2.apply(dist)
         return dist1 + dist2
+
+    def __cmp__(self, other):
+        if not isinstance(other, DisjunctRegex):
+            return cmp(self, other)
+        else:
+            return cmp((self.poss1, self.poss2),
+                       (other.poss1, other.poss2))
 
 class StarRegex(Regex):
     def __init__(self, transition, transition_op, nnodes, inside, length):
@@ -287,6 +306,15 @@ class StarRegex(Regex):
         linop = self.compile_into_linop()
         return linop.matvec(dist)
 
+    def __cmp__(self, other):
+        if not isinstance(other, StarRegex):
+            return cmp(self, other)
+        else:
+            return cmp((self.transition, self.transition_op, self.nnodes,
+                        self.inside, self.length),
+                       (other.transition, other.transition_op, other.nnodes,
+                        other.inside, other.length))
+
 class ConcatRegex(Regex):
     def __init__(self, transition, transition_op, part1, part2):
         self.transition = transition
@@ -316,3 +344,12 @@ class ConcatRegex(Regex):
         dist2 = dist2 * self.transition
         dist2 = self.part2.apply(dist2)
         return dist2
+
+    def __cmp__(self, other):
+        if not isinstance(other, ConcatRegex):
+            return cmp(self, other)
+        else:
+            return cmp((self.transition, self.transition_op,
+                        self.part1, self.part2),
+                       (other.transition, other.transition_op,
+                        other.part1, other.part2))
