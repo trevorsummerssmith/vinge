@@ -17,6 +17,7 @@ class NodeKind:
     NodeKindLogLineVertex = 0
     NodeKindUniqueIDVertex = 1
     NodeKindTagVertex = 2
+    NodeKindClusterVertex = 3
 
 class Vertex(object):
     """
@@ -31,6 +32,14 @@ class Vertex(object):
         raise NotImplemented
 
     def __repr__(self):
+        raise NotImplemented
+
+    def summarize(self):
+        """
+        Must be overridden by subclasses. Should return a dict of
+        values that will be used in constructing labels for zoomed-out
+        versions of the graph. It is OK to return an empty dict.
+        """
         raise NotImplemented
 
 class LogLineVertex(Vertex):

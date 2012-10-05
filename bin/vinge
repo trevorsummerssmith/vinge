@@ -13,6 +13,7 @@ from vinge.format import format_vertex
 from vinge.format import shorten_color_str
 from vinge.graph import EdgeType
 from vinge.graph import make_graph
+from vinge.clustering import cluster_graph
 from vinge.parser import parse_log_file
 from vinge.repl import repl
 
@@ -26,7 +27,8 @@ def init(filename):
     # Parse the file and make the graph.
     (log_line_vertices, tag_map, id_map) = parse_log_file(filename)
     graph = make_graph(log_line_vertices, tag_map, id_map, time_weighting)
-    return (log_line_vertices, Context(graph))
+    clustering = cluster_graph(graph)
+    return (log_line_vertices, Context(graph, clustering))
 
 def janky_get_posn(ctx, log_line_vertices, log_line_number):
     # Do this kind of janky thing for now -- take the log line number to start

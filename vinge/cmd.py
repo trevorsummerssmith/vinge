@@ -80,6 +80,16 @@ def go_by_vertex(ctx, args):
     _print_location(ctx)
     _print_neighbors(ctx)
 
+def zoom_out(ctx):
+    ctx.zoomlevel += 1
+    _print_location(ctx)
+    _print_neighbors(ctx)
+
+def zoom_out(ctx):
+    ctx.zoomlevel += 1
+    _print_location(ctx)
+    _print_neighbors(ctx)
+
 def quit(ctx, args):
     print "goodbye (^_^)"
     sys.exit(0)

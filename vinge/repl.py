@@ -26,6 +26,14 @@ def _setup_command_parser():
     go_parser.add_argument('idx', type=int)
     go_parser.set_defaults(func=cmd.go_by_neighbor_index)
 
+    # zoom_out command
+    zoom_out_parser = subparsers.add_parser('out', aliases=['o'])
+    zoom_out_parser.set_defaults(func=cmd.zoom_out)
+
+    # zoom_in command
+    zoom_in_parser = subparsers.add_parser('in', aliases=['i'])
+    zoom_in_parser.set_defaults(func=cmd.zoom_in)
+
     # quit
     quit_parser = subparsers.add_parser('quit')
     quit_parser.set_defaults(func=cmd.quit)

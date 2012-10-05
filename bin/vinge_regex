@@ -73,11 +73,14 @@ def main():
         print '_' * 10
         nbrs = graph[posn]
         lookup = {}
+        max_length = 80
         for i, nbr in enumerate(nbrs):
-            print "%d %s %s" % (i,
+            shortened_version = shorten_color_str(format_vertex(nbr), max_length)
+            print "%2d %0.3f %s" % (i,
                                 graph[posn][nbr]['weight'],
-                                shorten_color_str(format_vertex(nbr), 80)),
-            print " " * 5,
+                                shortened_version),
+            num_spaces = max(0, max_length - len(shortened_version))
+            print " " * (5 + num_spaces),
             print filter_set.describe_node(nbr)
             lookup[i] = nbr
         i = int(input('Go where? '))
