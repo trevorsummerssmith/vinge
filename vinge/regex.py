@@ -74,7 +74,6 @@ January 2007, http://swtch.com/~rsc/regexp/regexp1.html
 """
 
 import numpy as np
-import networkx as nx
 import scipy as sp
 from scipy.sparse.linalg import LinearOperator, aslinearoperator
 
@@ -102,17 +101,15 @@ def scl(a,s):
         return s * a.matvec(v)
     return LinearOperator(a.shape, matvec=matvec)
 
-
-# TODO make this a proper abstract class
-class Regex:
+class Regex(object):
     def compile_into_matrix(self):
-        raise NotImplemented
+        return NotImplemented
 
     def compile_into_linop(self):
-        raise NotImplemented
+        return NotImplemented
 
     def apply(self, dist):
-        raise NotImplemented
+        return NotImplemented
 
     def __str__(self):
         """
@@ -123,7 +120,7 @@ class Regex:
           >>> regex2 = compile_regex(str(regex))
           >>> regex == regex2
         """
-        raise NotImplemented
+        return NotImplemented
 
 class TrivialRegex(Regex):
     def __init__(self, nnodes):
