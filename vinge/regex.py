@@ -194,6 +194,41 @@ class FilterRegex(Regex):
     def __str__(self):
         return "%s" % self.thefilter.__name__
 
+class MatrixFilterRegex(Regex):
+    def __init__(self, nnodes, thefilter, graph):
+        ''' thefilter: vector
+        This is a convenience. It provides the same functionality
+        as FilterRegex, excpet the user provides a matrix instead of a function
+        '''
+        # TODO(trevor) clean this up. Probably merge MatrixFilter with Filter?
+        self.nnodes = nnodes
+        self.thefilter = thefilter
+        self.graph = graph
+        self._cached_linop = None
+
+    def compile_into_matrix(self):
+        filter_values = np.zeros(self.nnodes)
+        for i in xrange(self.nnodes):
+            filter_values[i] = self.thefilter(i)
+        return sp.sparse.spdiags(filter_values, [0], self.nnodes, self.nnodes)
+
+    def compile_into_linop(self):
+        if self._cached_linop:
+            return self._cached_linop
+        self._cached_linop = LinearOperator((self.nnodes,self.nnodes), matvec=self.apply)
+        return self._cached_linop
+
+    def apply(self, dist):
+        # We want element-wise multiplication
+        # self.thefilter is an array
+        return self.thefilter * dist
+
+    def __cmp__(self, other):
+        if not isinstance(other, MatrixFilterRegex):
+            return cmp(self, other)
+        else:
+            return cmp((self.nnodes, self.thefilter, self.graph),
+                       (other.nnodes, other.thefilter, other.graph))
 
 #TODO: do we want to specify weights on the alternatives?
 class DisjunctRegex(Regex):

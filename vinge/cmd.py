@@ -16,6 +16,9 @@ from kct.argparse import Namespace
 from kct.output import pp, error, indent, deindent
 import sys
 
+import heapq
+from vinge.filter import *
+from vinge.regex import MatrixFilterRegex, ConcatRegex
 
 def _print_regexes_header(ctx):
     """
@@ -57,6 +60,74 @@ def _print_neighbors(ctx):
         print "%d %s %s" % (i,
                             ctx.graph[ctx.posn][nbr]['weight'],
                             shorten_color_str(format_vertex(nbr), 80))
+        _print_most_likely_paths(ctx, nbr)
+
+def _make_matrix_filter(transition, transition_op, filter, node):
+    """
+    This has a bad name.
+    Make a new filter whose regex is: node filter.regex
+    That is, start with the node passed in, followed by the regex in filter.
+
+    Args:
+        transition (scipy.sparse.base.spmatrix) Adjacency matrix of graph
+        transition_op (scipy.sparse.linalg.LinearOperator) LinOp of transition
+        filter (filter.Filter)
+        node (vertex.Vertex)
+
+    Returns:
+        filter.Filter
+    """
+    # np.zeros returns a numpy array
+    state = np.zeros(filter.graph.number_of_nodes())
+    state[node.idx()] = 1.0
+    node_regex = MatrixFilterRegex(filter.graph.number_of_nodes(),
+                                   state, filter.graph)
+    regex = ConcatRegex(transition, transition_op, node_regex, filter.regex)
+    return Filter(regex, filter.graph)
+
+def _most_likely_endpoints(ctx, filter, node, num_choose=4):
+    """
+    Calculates the most likely endpoints for the given filter,
+    beginning at node.
+
+    Args:
+        ctx (context.Context)
+        filter (filter.Filter)
+        node (vertex.Vertex) the node to start the paths
+        num_choose (int) the number of endpoints to return
+
+    Returns:
+        list of (int, float) - the index of the node in the graph's nodes array
+            the float is the probability of the endpoint.
+    """
+    this_filter = _make_matrix_filter(ctx.transition,
+                                      ctx.transition_op, filter, node)
+    values = this_filter.calculate_values()
+    most_likely = heapq.nlargest(num_choose, enumerate(values),
+                                 key=lambda p: p[1])
+    # TODO(trevor) num_choose should be able to be 'None' in which case
+    # this returns the entire sorted list
+    return most_likely
+
+def _print_most_likely_paths(ctx, node):
+    """
+    Calculates and prints the most likely endpoints for all regexes
+    in the context provided.
+    """
+    indent()
+    for name, regex in ctx.regexes.iteritems():
+        most_likely = _most_likely_endpoints(ctx, regex, node)
+        nodes = ctx.graph.nodes() # cache this lookup
+        pp("%s"%name)
+        indent()
+        for (idx, val) in most_likely:
+            endpoint = nodes[idx]
+            # Skip current
+            if endpoint == ctx.posn or endpoint == node:
+                continue
+            pp("%s [%e]" % (str(endpoint)[:80], val))
+        deindent()
+    deindent()
 
 def go_by_neighbor_index(ctx, args):
     """
