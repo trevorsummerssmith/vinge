@@ -114,6 +114,17 @@ class Regex:
     def apply(self, dist):
         raise NotImplemented
 
+    def __str__(self):
+        """
+        Implementors of this class must export a valid string representation
+        this regex ie:
+          >>> from parse_regex import compile_regex
+          >>> regex = compile_regex(".*")
+          >>> regex2 = compile_regex(str(regex))
+          >>> regex == regex2
+        """
+        raise NotImplemented
+
 class TrivialRegex(Regex):
     def __init__(self, nnodes):
         self.nnodes = nnodes
@@ -135,6 +146,9 @@ class TrivialRegex(Regex):
         if not isinstance(other, TrivialRegex):
             return cmp(self, other)
         return cmp(self.nnodes, other.nnodes)
+
+    def __str__(self):
+        return '.'
 
 class FilterRegex(Regex):
     def __init__(self, nnodes, thefilter, graph):
@@ -180,6 +194,9 @@ class FilterRegex(Regex):
             return cmp((self.nnodes, self.thefilter, self.graph),
                        (other.nnodes, other.thefilter, other.graph))
 
+    def __str__(self):
+        return "%s" % self.thefilter.__name__
+
 
 #TODO: do we want to specify weights on the alternatives?
 class DisjunctRegex(Regex):
@@ -213,6 +230,9 @@ class DisjunctRegex(Regex):
         else:
             return cmp((self.poss1, self.poss2),
                        (other.poss1, other.poss2))
+
+    def __str__(self):
+        return "(%s|%s)" % (self.poss1, self.poss2)
 
 class StarRegex(Regex):
     def __init__(self, transition, transition_op, nnodes, inside, length):
@@ -314,6 +334,8 @@ class StarRegex(Regex):
                         self.inside, self.length),
                        (other.transition, other.transition_op, other.nnodes,
                         other.inside, other.length))
+    def __str__(self):
+        return "(%s)*" % self.inside
 
 class ConcatRegex(Regex):
     def __init__(self, transition, transition_op, part1, part2):
@@ -353,3 +375,5 @@ class ConcatRegex(Regex):
                         self.part1, self.part2),
                        (other.transition, other.transition_op,
                         other.part1, other.part2))
+    def __str__(self):
+        return "(%s %s)" % (self.part1, self.part2)
