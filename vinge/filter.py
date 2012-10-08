@@ -5,10 +5,7 @@ class Filter:
     def __init__(self, regex, graph):
         self.regex = regex
         self.graph = graph
-        print 'starting to compile filter...'
-        print ' (%d nodes)' % self.regex.nnodes
         self.linop = regex.compile_into_linop()
-        print 'done compiling filter!'
 
     def calculate_values(self):
         vals = np.ones(self.regex.nnodes)

@@ -20,13 +20,34 @@ def time_weighting(t1,t2):
     tdelta = -abs(t2-t1)
     return np.exp(0.0001 * tdelta.total_seconds())
 
+def make_default_regexes(graph, transition, transition_op):
+    from vinge.regex import ConcatRegex, FilterRegex, StarRegex, TrivialRegex
+    from vinge.filter import Filter
+    from vinge.filters import logline
+
+    # Create (.*) (logline)
+
+    ll_reach_regex = ConcatRegex(transition, transition_op,
+                                 StarRegex(transition, transition_op, graph.number_of_nodes(),
+                                           TrivialRegex(graph.number_of_nodes()),
+                                           length=3.0),
+                                 FilterRegex(graph.number_of_nodes(), logline, graph)
+                                 )
+    ll_reach_filter = Filter(ll_reach_regex, graph)
+    return {'ll_reach' : ll_reach_filter}
+
 def init(filename):
     # Janky for now. Let's let this get some more structure then will
     # bust it out.
     # Parse the file and make the graph.
     (log_line_vertices, tag_map, id_map) = parse_log_file(filename)
     graph = make_graph(log_line_vertices, tag_map, id_map, time_weighting)
-    return (log_line_vertices, Context(graph))
+
+    # Make some default regexes
+    ctx = Context(graph)
+    ctx.regexes = make_default_regexes(graph, ctx.transition, ctx.transition_op)
+
+    return (log_line_vertices, ctx)
 
 def janky_get_posn(ctx, log_line_vertices, log_line_number):
     # Do this kind of janky thing for now -- take the log line number to start

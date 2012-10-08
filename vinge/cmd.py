@@ -13,7 +13,18 @@ from vinge.format import shorten_color_str
 from graph import EdgeType
 
 from kct.argparse import Namespace
+from kct.output import pp, error, indent, deindent
 import sys
+
+
+def _print_regexes_header(ctx):
+    """
+    Pretty prints the regexes
+    """
+    pp("Regexes: ")
+    for name, filter in ctx.regexes.iteritems():
+        pp("  %s %s" % (name, filter.regex))
+    # TODO(trevor) wordwrap
 
 def _print_location(ctx):
     """
@@ -78,8 +89,47 @@ def go_by_vertex(ctx, args):
     """
     ctx.posn = args.vertex
     _print_location(ctx)
+    _print_regexes_header(ctx)
     _print_neighbors(ctx)
 
 def quit(ctx, args):
     print "goodbye (^_^)"
     sys.exit(0)
+
+#
+# Regex
+#
+def regex_list(ctx, args):
+    """
+    Prints the current regexes.
+    """
+    for name, filter in ctx.regexes.iteritems():
+        pp("  %s: %s" % (name, str(filter.regex)))
+
+def regex_add(ctx, args):
+    """
+    Adds a regex to the context's list of regexes.
+
+    Args:
+        ctx (context.Context)
+        args (kct.argparse.Namepsace)
+        args.name (str) - used to refer to the regex
+        args.regex-str (str) - the regex in string form. A valid argument to
+            regex_parser.compile_regex
+
+    Returns: None
+    """
+    from vinge.filter import Filter
+    from vinge.regex_parser import compile_regex, RegexParseException
+    from vinge.regex_ast_to_regex import ast_to_regex
+    name = args.name
+    # argparse gives us an array of strings as the regex-str. We want a string
+    regex_str = ' '.join(getattr(args, 'regex-str'))
+    try:
+        regex_ast = compile_regex(regex_str)
+        regex = ast_to_regex(ctx.graph, ctx.transition, ctx.transition_op, regex_ast)
+        # Add to the context
+        ctx.regexes[name] = Filter(regex, ctx.graph)
+        pp('Successfully added regex')
+    except RegexParseException, rpe:
+        error("Error parsing regex '%s': %s"%(regex_str, rpe.message))

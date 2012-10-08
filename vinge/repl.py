@@ -29,6 +29,21 @@ def _setup_command_parser():
     # quit
     quit_parser = subparsers.add_parser('quit')
     quit_parser.set_defaults(func=cmd.quit)
+
+    # regex commands
+    regex_parser = subparsers.add_parser('regex', aliases=['r'])
+    regex_sparser = regex_parser.add_subparsers()
+
+    # regex list
+    regex_list_parser = regex_sparser.add_parser('list', aliases=['l'])
+    regex_list_parser.set_defaults(func=cmd.regex_list)
+
+    # regex add
+    regex_add_parser = regex_sparser.add_parser('add', aliases=['a'])
+    regex_add_parser.add_argument('name')
+    regex_add_parser.add_argument('regex-str', nargs='+')
+    regex_add_parser.set_defaults(func=cmd.regex_add)
+
     return command_parser
 
 def repl(ctx):
