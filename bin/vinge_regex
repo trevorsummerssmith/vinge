@@ -16,6 +16,7 @@ from vinge.vertex import LogLineVertex, TagVertex, UniqueIDVertex
 from vinge.filter import FilterSet, Filter
 from vinge.regex import FilterRegex, ConcatRegex, StarRegex, TrivialRegex
 import vinge
+import vinge.filters
 
 def time_weighting(t1,t2):
     tdelta = -abs(t2-t1)
@@ -47,11 +48,11 @@ def main():
         print 'unknown line number'
         sys.exit(-1)
 
-    is_tag_filter = Filter(FilterRegex(graph.number_of_nodes(), vinge.filter.is_tag, graph), graph)
-    num_es_filter = Filter(FilterRegex(graph.number_of_nodes(), vinge.filter.number_of_es, graph), graph)
+    is_tag_filter = Filter(FilterRegex(graph.number_of_nodes(), vinge.filters.tag, graph), graph)
+    num_es_filter = Filter(FilterRegex(graph.number_of_nodes(), vinge.filters.number_of_es, graph), graph)
 
     ll_reach_regex = ConcatRegex(transition, transition_op, 
-                                 FilterRegex(graph.number_of_nodes(), vinge.filter.is_line, graph), 
+                                 FilterRegex(graph.number_of_nodes(), vinge.filters.logline, graph),
                                  StarRegex(transition, transition_op, graph.number_of_nodes(),
                                            TrivialRegex(graph.number_of_nodes()),
                                            length=3.0)

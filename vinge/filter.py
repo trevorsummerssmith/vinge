@@ -1,25 +1,5 @@
 import numpy as np
-from vinge.vertex import LogLineVertex, TagVertex, UniqueIDVertex, NodeKind
-
-def is_tag(v):
-    if v.kind == NodeKind.NodeKindTagVertex:
-        return 1.0
-    else:
-        return 0.0
-
-def is_line(v):
-    if v.kind == NodeKind.NodeKindLogLineVertex:
-        return 1.0
-    else:
-        return 0.0
-
-def number_of_es(v):
-    if v.kind == NodeKind.NodeKindLogLineVertex:
-        return v.message.lower().count('e')
-    elif v.kind == NodeKind.NodeKindUniqueIDVertex:
-        return 0.0
-    elif v.kind == NodeKind.NodeKindTagVertex:
-        return v.word.lower().count('e')
+from vinge.vertex import LogLineVertex, TagVertex, UniqueIDVertex
 
 class Filter:
     def __init__(self, regex, graph):

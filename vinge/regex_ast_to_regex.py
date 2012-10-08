@@ -1,19 +1,18 @@
-import filter
+from filters import id, logline, tag
 from regex_parser import *
 from regex import FilterRegex, ConcatRegex, DisjunctRegex, StarRegex, TrivialRegex
 
 def _base_absyn(graph, node):
-    # TODO(trevor) not sure yet where the functions (is_line) should be stored
     bt = node.base_type
     if bt == BaseType.ANYTHING:
         return TrivialRegex(graph.number_of_nodes())
     else:
         if bt == BaseType.LOGLINE:
-            f = filter.is_line
+            f = logline
         elif bt == BaseType.TAG:
-            f = filter.is_tag
+            f = tag
         elif bt == BaseType.ID:
-            f = filter.is_id
+            f = id
         return FilterRegex(graph.number_of_nodes(),
                            f, graph)
 

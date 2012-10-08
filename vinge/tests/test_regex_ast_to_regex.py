@@ -1,7 +1,7 @@
 import networkx as nx
 import scipy as sp
 
-import vinge.filter
+import vinge.filters
 from vinge.regex_ast_to_regex import ast_to_regex
 from vinge.regex_parser import *
 from vinge.regex import *
@@ -30,21 +30,21 @@ class TestRegexAstToRegex:
         ast = BaseAbsyn(BaseType.LOGLINE)
         regex = do_ast_to_regex(ast)
         assert regex == FilterRegex(graph.number_of_nodes(),
-                                    vinge.filter.is_line,
+                                    vinge.filters.logline,
                                     graph)
 
     def test_tag(self):
         ast = BaseAbsyn(BaseType.TAG)
         regex = do_ast_to_regex(ast)
         assert regex == FilterRegex(graph.number_of_nodes(),
-                                    vinge.filter.is_tag,
+                                    vinge.filters.tag,
                                     graph)
 
     def test_id(self):
         ast = BaseAbsyn(BaseType.ID)
         regex = do_ast_to_regex(ast)
         assert regex == FilterRegex(graph.number_of_nodes(),
-                                    vinge.filter.is_id,
+                                    vinge.filters.id,
                                     graph)
 
     def test_concat(self):
@@ -52,10 +52,10 @@ class TestRegexAstToRegex:
         regex = do_ast_to_regex(ast)
         answer = ConcatRegex(transition, transition_op,
                              FilterRegex(graph.number_of_nodes(),
-                                         vinge.filter.is_line,
+                                         vinge.filters.logline,
                                          graph),
                              FilterRegex(graph.number_of_nodes(),
-                                         vinge.filter.is_id,
+                                         vinge.filters.id,
                                          graph)
                              )
         assert regex == answer
@@ -64,10 +64,10 @@ class TestRegexAstToRegex:
         ast = DisjunctAbsyn(BaseAbsyn(BaseType.ID), BaseAbsyn(BaseType.TAG))
         regex = do_ast_to_regex(ast)
         answer = DisjunctRegex(FilterRegex(graph.number_of_nodes(),
-                                           vinge.filter.is_id,
+                                           vinge.filters.id,
                                            graph),
                                FilterRegex(graph.number_of_nodes(),
-                                           vinge.filter.is_tag,
+                                           vinge.filters.tag,
                                            graph)
                                )
         assert regex == answer
