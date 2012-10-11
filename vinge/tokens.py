@@ -40,7 +40,7 @@ def is_stop_word(string):
 def is_splitter(string):
     return re.match('[\s=,]+', string) is not None
 
-def tokenize(string):
+def default_tokenize(string):
     """
     Takes a string and returns a list of the tokens found in that string.
 

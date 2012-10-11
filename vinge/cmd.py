@@ -8,7 +8,8 @@ Each public method should correspond to a user method on the repl
 (see repl.py).
 """
 
-from format import format_vertex
+#from format import format_vertex
+from books_backend import BooksBackEnd
 from vinge.format import shorten_color_str
 from graph import EdgeType
 
@@ -49,7 +50,7 @@ def _print_location(ctx):
             next_neighbor = nbr
     if previous_neighbor:
         print previous_neighbor
-    print format_vertex(posn)
+    print ctx.be.format_vertex(posn)
     if next_neighbor:
         print next_neighbor
 
@@ -59,7 +60,7 @@ def _print_neighbors(ctx):
     for i, nbr in enumerate(sorted(nbrs)):
         print "%d %s %s" % (i,
                             ctx.graph[ctx.posn][nbr]['weight'],
-                            shorten_color_str(format_vertex(nbr), 80))
+                            shorten_color_str(ctx.be.format_vertex(nbr), 80))
         _print_most_likely_paths(ctx, nbr)
 
 def _make_matrix_filter(transition, transition_op, filter, node):

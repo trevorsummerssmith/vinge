@@ -9,11 +9,10 @@ import kct.output as output
 import vinge.cmd as cmd
 
 from vinge.context import Context
-from vinge.format import format_vertex
 from vinge.format import shorten_color_str
 from vinge.graph import EdgeType
 from vinge.graph import make_graph
-from vinge.parser import parse_log_file
+from vinge.books_backend import BooksBackEnd
 from vinge.repl import repl
 
 def time_weighting(t1,t2):
@@ -36,15 +35,16 @@ def make_default_regexes(graph, transition, transition_op):
     ll_reach_filter = Filter(ll_reach_regex, graph)
     return {'ll_reach' : ll_reach_filter}
 
-def init(filename):
+def init(filename, idfile):
     # Janky for now. Let's let this get some more structure then will
     # bust it out.
     # Parse the file and make the graph.
-    (log_line_vertices, tag_map, id_map) = parse_log_file(filename)
+    be = BooksBackEnd(idfile)
+    (log_line_vertices, tag_map, id_map) = be.parse_file(filename)
     graph = make_graph(log_line_vertices, tag_map, id_map, time_weighting)
 
     # Make some default regexes
-    ctx = Context(graph)
+    ctx = Context(be, graph)
     ctx.regexes = make_default_regexes(graph, ctx.transition, ctx.transition_op)
 
     return (log_line_vertices, ctx)
@@ -66,12 +66,13 @@ def main():
     desc = 'vinge: providing next level vernor vinge automation'
     parser = kct.argparse.ArgumentParser(description=desc)
     parser.add_argument('file', help='Log file to parse')
+    parser.add_argument('idfile', help='File containing proper nouns')
     parser.add_argument('line-number',
                         help='Number in the file on which to start')
     args = parser.parse_args(sys.argv[1:])
 
     # Parse the file and make the graph
-    (log_line_vertices, ctx) = init(args.file)
+    (log_line_vertices, ctx) = init(args.file, args.idfile)
     posn = janky_get_posn(ctx, log_line_vertices, int(getattr(args, 'line-number')))
 
     # go to the vertex selected on the command line
