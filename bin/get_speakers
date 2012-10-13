@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+
+import sys
+from vinge.books_backend import clean_up_word
+
+bookfile = open(sys.argv[1], 'r')
+# speakers_file = open(sys.argv[2], 'w')
+
+in_quote = False
+in_quote_par = False
+speaker = ''
+num_lines = 1000
+cur_par = ''
+
+potential_speakers = ['he', 'I']
+
+for line_num, line in enumerate(bookfile):
+    cur_par = cur_par + line
+
+    if line.rstrip() == '':
+        in_quote = False
+        in_quote_par = False
+        for pot_speaker in potential_speakers:
+            if pot_speaker in speaker:
+                print 'ATTRIBUTION[%s]: %s' % (pot_speaker, cur_par)
+                break
+        speaker = ''
+        cur_par = ''
+
+    for c in line:
+        if c == '"':
+            in_quote = not in_quote
+            in_quote_par = True
+
+        # if in_quote:
+        #     print 'INQUOTE:', line, c, in_quote
+        
+        if in_quote_par and not in_quote:
+            speaker = speaker + c
+#            print 'SPEAKER:', speaker
+
+    if line_num >= num_lines:
+        break
+
+# speakers_file.close()

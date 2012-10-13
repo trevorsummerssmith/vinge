@@ -1,0 +1,16 @@
+$ill = sensors.is_log_line;                           // sensors are externally defined python functions from nodes to reals
+$dot = sensors.any_vertex;
+$foo = $ill *. $dot;                                  // pointwise multiplication
+$bar = $ill + $dot;                                   // pointwise addition
+-mcomb> = combinators.markov_transition;              // combinators are externally defined python functions from pairs of nodes to reals
+-mcomb2> = -mcomb> -mcomb>                            // combinators can be multiplied by concatenation, yielding another combinator
+-mcomb3> = -mcomb> $dot -mcomb> $dot -mcomb>;         // combinators can be multiplied by concatenation
+$dotstar = ($dot -mcomb>)**2.5;                       // This expresses the Kleene star. 2.5 is the desired path-length, but others will be matched
+$loglines_reachable = ^ -mcomb> $dotstar -mcomb> $ill // this is how we express a path (^ specifies the point of evaluation, like a regex anchor)
+export $loglines_reachable;                           // make this regex available to the user
+$tag_foo = sensors.is_tag("foo");
+$tag_bar = sensors.is_tag("bar");
+=branch> = combinators.branch;                        // a binary combinator
+$contains_both = ($tag_foo, $tag_bar) =branch>
+
+
