@@ -7,16 +7,20 @@ def normalize_graph(g):
     '''For each vertex, normalize the weights of its out-edges so they
     sum to 1.0. (Unless they sum to 0.0, in which case leave them
     alone.) We assume that weights are non-negative.'''
+    # This function is called a lot and takes up a ton of time,
+    # so I optimized it a bunch, comments below to aid readability.
+    s = sum # cache global name lookup
     for u in g.nodes_iter():
-        totwt = 0.0
-        for (_,_,edata) in g.edges_iter(u, data=True):
-            totwt += edata['weight']
+        # Find the total weight of all edges for this node
+        # Cache neighbors lookup, and use internal dict to avoid function call
+        nbrs = g.succ[u]
+        totwt = s([d['weight'] for d in nbrs.values()])
 
         if totwt > 0.0:
             itotwt = 1.0 / totwt
-
-            for (_,v) in g.edges_iter(u):
-                g[u][v]['weight'] = itotwt * g[u][v]['weight'] 
+            nbrs = g.succ[u]
+            for v in nbrs:
+                nbrs[v]['weight'] *= itotwt
 
 class EdgeType:
     """
