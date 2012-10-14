@@ -26,6 +26,12 @@ def _setup_command_parser():
     go_parser.add_argument('idx', type=int)
     go_parser.set_defaults(func=cmd.go_by_neighbor_index)
 
+
+    # info
+    info_parser = subparsers.add_parser('info', aliases=['i'])
+    info_parser.add_argument('node-ref', nargs='?')
+    info_parser.set_defaults(func=cmd.info)
+
     # quit
     quit_parser = subparsers.add_parser('quit')
     quit_parser.set_defaults(func=cmd.quit)

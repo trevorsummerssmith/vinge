@@ -18,6 +18,7 @@ import sys
 
 import heapq
 from vinge.filter import *
+from vinge.node_ref import parse_node_ref, NodeRef, NodeRefType
 from vinge.regex import MatrixFilterRegex, ConcatRegex
 
 def _print_regexes_header(ctx):
@@ -29,36 +30,43 @@ def _print_regexes_header(ctx):
         pp("  %s %s" % (name, filter.regex))
     # TODO(trevor) wordwrap
 
-def _print_location(ctx):
+def _print_location(ctx, cur_node=None):
     """
     Prints the previous log line, current log line and next log line.
     The current log line has the tags and ids highlighted. Previous
     and next log lines are just printed.
     """
     graph = ctx.graph
-    posn = ctx.posn
-    nbrs = graph[posn]
+    if not cur_node:
+        node = ctx.posn
+    else:
+        node = cur_node
+    nbrs = graph[node]
     # Grab the previous guy
     previous_neighbor = None
     next_neighbor = None
     for nbr in nbrs:
-        edge_type = graph[posn][nbr].get('edge_type', None)
+        edge_type = graph[node][nbr].get('edge_type', None)
         if edge_type == EdgeType.ADJACENT_PREV:
             previous_neighbor = nbr
         elif edge_type == EdgeType.ADJACENT_NEXT:
             next_neighbor = nbr
     if previous_neighbor:
         print previous_neighbor
-    print format_vertex(posn)
+    print format_vertex(node)
     if next_neighbor:
         print next_neighbor
 
-def _print_neighbors(ctx):
-    nbrs = ctx.sorted_neighbors(ctx.posn)
+def _print_neighbors(ctx, cur_node=None):
+    if cur_node is None:
+        node = ctx.posn
+    else:
+        node = cur_node
+    nbrs = ctx.sorted_neighbors(node)
     print '_' * 10
     for i, nbr in enumerate(nbrs):
         print "%d %s %s" % (i,
-                            ctx.graph[ctx.posn][nbr]['weight'],
+                            ctx.graph[node][nbr]['weight'],
                             shorten_color_str(format_vertex(nbr), 80))
         _print_most_likely_paths(ctx, nbr)
 
@@ -162,6 +170,40 @@ def go_by_vertex(ctx, args):
     _print_location(ctx)
     _print_regexes_header(ctx)
     _print_neighbors(ctx)
+
+def info(ctx, args):
+    """
+    Args:
+        ctx (context.Context)
+        args (kct.argparse.Namespace)
+        args.node-ref
+    """
+    node_ref_str = getattr(args, 'node-ref')
+    # info command without anything is 'current'
+    if node_ref_str is None:
+        node_ref_str = 'cur'
+
+    node_ref = parse_node_ref(node_ref_str)
+    if node_ref is None:
+        # TODO(trevor) print node-ref types in help msg
+        error("Error %s is not a valid node-ref" % node_ref_str)
+        return
+    elif node_ref.type == NodeRefType.CURRENT:
+        _print_location(ctx)
+        _print_regexes_header(ctx)
+        _print_neighbors(ctx)
+    elif node_ref.type == NodeRefType.NEIGHBOR:
+        # Sanity check arg
+        num_neighbors = len(ctx.graph[ctx.posn])
+        if node_ref.neighbor_index >= num_neighbors:
+            msg_args = (node_ref.neighbor_index, num_neighbors)
+            msg = "Neighbor index out of bounds: got %d, but only %d neighbors"
+            error(msg % msg_args)
+            return
+        node = ctx.sorted_neighbors(ctx.posn)[node_ref.neighbor_index]
+        _print_location(ctx, node)
+        _print_regexes_header(ctx)
+        _print_neighbors(ctx, node)
 
 def quit(ctx, args):
     print "goodbye (^_^)"
