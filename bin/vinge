@@ -36,17 +36,35 @@ def make_default_regexes(graph, transition, transition_op):
     ll_reach_filter = Filter(ll_reach_regex, graph)
     return {'ll_reach' : ll_reach_filter}
 
+def _info(string):
+    # Prints then flushes
+    output.info(string, newline=False)
+    sys.stdout.flush()
+
 def init(filename):
     # Janky for now. Let's let this get some more structure then will
     # bust it out.
     # Parse the file and make the graph.
+    _info("Parsing log file... ")
     (log_line_vertices, tag_map, id_map) = parse_log_file(filename)
+    output.pp("done")
+
+    _info("Creating graph... ")
     graph = make_graph(log_line_vertices, tag_map, id_map, time_weighting)
+    output.pp("done")
+
+    # There will be a lot of nodes and edges (print of commas in the output)
+    output.pp("  - {0:,d} nodes".format(graph.number_of_nodes()))
+    output.pp("  - {0:,d} edges".format(graph.number_of_edges()))
+
+    _info("Computing graph's sparse adjency matrix and linear operator... ")
+    ctx = Context(graph)
+    output.pp("done")
 
     # Make some default regexes
-    ctx = Context(graph)
+    _info("Compiling default regexes... ")
     ctx.regexes = make_default_regexes(graph, ctx.transition, ctx.transition_op)
-
+    output.pp("done")
     return (log_line_vertices, ctx)
 
 def janky_get_posn(ctx, log_line_vertices, log_line_number):
