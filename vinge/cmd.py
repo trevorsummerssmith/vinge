@@ -54,9 +54,9 @@ def _print_location(ctx):
         print next_neighbor
 
 def _print_neighbors(ctx):
-    nbrs = ctx.graph[ctx.posn]
+    nbrs = ctx.sorted_neighbors(ctx.posn)
     print '_' * 10
-    for i, nbr in enumerate(sorted(nbrs)):
+    for i, nbr in enumerate(nbrs):
         print "%d %s %s" % (i,
                             ctx.graph[ctx.posn][nbr]['weight'],
                             shorten_color_str(format_vertex(nbr), 80))

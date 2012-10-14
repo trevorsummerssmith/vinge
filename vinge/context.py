@@ -21,3 +21,17 @@ class Context(object):
         # TODO(trevor) this should be somewhere else. Here be some leaky abstracitions.
         self.transition = to_scipy_sparse_matrix(self.graph)
         self.transition_op = aslinearoperator(self.transition)
+
+    def sorted_neighbors(self, node):
+        """
+        Returns the neighbors of node. Sorted in a way that will remain stable
+        between calls. The purpose of this is so that views can print indices of
+        the neighbor nodes and have that be meaningful.
+
+        Args:
+            node (vertex.Vertex): the node whose neighbors to return
+
+        Returns:
+            list of vertex.Vertex
+        """
+        return sorted(self.graph[node])
