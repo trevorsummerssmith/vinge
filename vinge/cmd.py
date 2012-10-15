@@ -149,9 +149,7 @@ def go_by_neighbor_index(ctx, args):
     Returns: None
     """
     idx = args.idx
-    neighbors = ctx.graph[ctx.posn]
-    # Assume stable sort on neighbors
-    vertex = sorted(neighbors)[idx]
+    vertex = ctx.sorted_neighbors(ctx.posn)[idx]
     go_by_vertex(ctx, Namespace(vertex=vertex))
 
 def go_by_vertex(ctx, args):
