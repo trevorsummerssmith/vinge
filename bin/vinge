@@ -63,7 +63,9 @@ def init(filename):
 
     # Make some default regexes
     _info("Compiling default regexes... ")
-    ctx.regexes = make_default_regexes(graph, ctx.transition, ctx.transition_op)
+    regexes = make_default_regexes(graph, ctx.transition, ctx.transition_op)
+    for name, regex in regexes.items():
+        ctx.add_regex(name, regex)
     output.pp("done")
     return (log_line_vertices, ctx)
 

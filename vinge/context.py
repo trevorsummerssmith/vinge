@@ -1,9 +1,30 @@
 from networkx import to_scipy_sparse_matrix
 from scipy.sparse.linalg import aslinearoperator
 
+class ActiveFilter(object):
+    """
+    Simple wrapper around a filter that includes an active boolean.
+    This is just a named tuple.
+
+    Attributes:
+        regex (filter.Filter)
+        active (bool)
+    """
+    def __init__(self, regex, active=True):
+        self.regex = regex
+        self.active = active
+
 class Context(object):
     """
     Simple wrapper to define the state the program is working with.
+
+    Attributes:
+        graph (networkx.DiGraph)
+        posn (vertext.Vertex) the current focus of the graph
+        _regexes (dict str -> ActiveFilter):
+            maps name of regex to the ActiveFilter. The ActiveFilter's
+            active attribute is used by the context to keep track of filter
+            state.
     """
 
     def __init__(self, graph, posn=None):
@@ -14,7 +35,7 @@ class Context(object):
         """
         self.graph = graph
         self.posn = posn
-        self.regexes = {}
+        self._regexes = {}
 
         # Compute adjacency matrix and linear operator of adjacency matrix
         # For graph. We need this for our regexes.
@@ -35,3 +56,24 @@ class Context(object):
             list of vertex.Vertex
         """
         return sorted(self.graph[node])
+
+    def regexes(self):
+        """
+        Returns:
+            list of ActiveFilter
+        """
+        return self._regexes
+
+    def add_regex(self, name, regex, active=True):
+        self._regexes[name] = ActiveFilter(regex, active)
+
+    def remove_regex(self, name):
+        del self._regexes[name]
+
+    def regex_toggle_active(self, name):
+        old = self._regexes[name].active
+        self._regexes[name].active = not old
+        return old
+
+    def regex_set_active(self, name, active):
+        self._regexes[name].active = active

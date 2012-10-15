@@ -26,11 +26,15 @@ def _setup_command_parser():
     go_parser.add_argument('idx', type=int)
     go_parser.set_defaults(func=cmd.go_by_neighbor_index)
 
+    help_parser = subparsers.add_parser('help')
+    # When this is executed it will take the ctx, posn pair
+    # it wants no args
+    help_parser.set_defaults(func=lambda a,b: command_parser.print_help())
 
     # info
     info_parser = subparsers.add_parser('info', aliases=['i'])
     info_parser.add_argument('node-ref', nargs='?')
-    info_parser.set_defaults(func=cmd.info)
+    info_parser.set_defaults(func=cmd.node_info)
 
     # quit
     quit_parser = subparsers.add_parser('quit')
@@ -49,6 +53,11 @@ def _setup_command_parser():
     regex_add_parser.add_argument('name')
     regex_add_parser.add_argument('regex-str', nargs='+')
     regex_add_parser.set_defaults(func=cmd.regex_add)
+
+    # regex toggle
+    regex_toggle_parser = regex_sparser.add_parser('toggle')
+    regex_toggle_parser.add_argument('name')
+    regex_toggle_parser.set_defaults(func=cmd.regex_toggle)
 
     return command_parser
 

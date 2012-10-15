@@ -13,7 +13,8 @@ from vinge.format import shorten_color_str
 from graph import EdgeType
 
 from kct.argparse import Namespace
-from kct.output import pp, error, indent, deindent
+from kct.output import pp, error, indent, info, deindent
+import kct.color as color
 import sys
 
 import heapq
@@ -26,8 +27,8 @@ def _print_regexes_header(ctx):
     Pretty prints the regexes
     """
     pp("Regexes: ")
-    for name, filter in ctx.regexes.iteritems():
-        pp("  %s %s" % (name, filter.regex))
+    for name, filter in ctx.regexes().iteritems():
+        pp("  %s %s" % (name, filter.regex.regex))
     # TODO(trevor) wordwrap
 
 def _print_location(ctx, cur_node=None):
@@ -123,7 +124,10 @@ def _print_most_likely_paths(ctx, node):
     in the context provided.
     """
     indent()
-    for name, regex in ctx.regexes.iteritems():
+    for name, val in ctx.regexes().iteritems():
+        if not val.active:
+            continue
+        regex = val.regex
         most_likely = _most_likely_endpoints(ctx, regex, node)
         nodes = ctx.graph.nodes() # cache this lookup
         pp("%s"%name)
@@ -169,7 +173,7 @@ def go_by_vertex(ctx, args):
     _print_regexes_header(ctx)
     _print_neighbors(ctx)
 
-def info(ctx, args):
+def node_info(ctx, args):
     """
     Args:
         ctx (context.Context)
@@ -214,8 +218,8 @@ def regex_list(ctx, args):
     """
     Prints the current regexes.
     """
-    for name, filter in ctx.regexes.iteritems():
-        pp("  %s: %s" % (name, str(filter.regex)))
+    for name, filter in ctx.regexes().iteritems():
+        pp("  %s: %s" % (name, str(filter.regex.regex)))
 
 def regex_add(ctx, args):
     """
@@ -244,3 +248,25 @@ def regex_add(ctx, args):
         pp('Successfully added regex')
     except RegexParseException, rpe:
         error("Error parsing regex '%s': %s"%(regex_str, rpe.message))
+
+_bool_to_active = {True:color.green('active'), False:color.red('inactive')}
+
+def regex_toggle(ctx, args):
+    """
+    Swaps the active status of the provided regex. Active regexes are used in
+    various display commands (see e.g. cmd.node_info).
+
+    Args:
+        ctx (context.Context)
+        args (kct.argparse.Namepsace)
+        args.name (str) - used to refer to the regex
+
+    Returns: None
+    """
+    name = args.name
+    try:
+        is_active = not ctx.regex_toggle_active(name)
+        info("%s is now %s" % (name, _bool_to_active[is_active]))
+    except KeyError, ke:
+        # TODO(trevor) catching keyerror here is bad. Probs masking something
+        error("Unknown regex '%s'" % name)
