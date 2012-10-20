@@ -1,5 +1,5 @@
 from filters import id, logline, tag
-from regex_parser import *
+from semex.parser import *
 from semex.semex import FilterRegex, ConcatRegex, DisjunctRegex, StarRegex, TrivialRegex
 
 def _base_absyn(graph, node):

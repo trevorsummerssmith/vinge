@@ -1,5 +1,9 @@
 import vinge
-from vinge.regex_parser import *
+from vinge.semex.parser import *
+
+# Note: this module is called 'test_semex_parser' and not 'test_parser' because
+# there is another file named 'test_parser and that creates a path conflict with
+# py.test. Lame.
 
 import pytest
 

@@ -234,7 +234,7 @@ def regex_add(ctx, args):
     Returns: None
     """
     from vinge.filter import Filter
-    from vinge.regex_parser import compile_regex, RegexParseException
+    from vinge.semex.parser import compile_regex, RegexParseException
     from vinge.regex_ast_to_regex import ast_to_regex
     name = args.name
     # argparse gives us an array of strings as the regex-str. We want a string
