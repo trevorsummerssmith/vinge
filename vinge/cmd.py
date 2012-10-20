@@ -70,71 +70,27 @@ def _print_neighbors(ctx, cur_node=None):
                          shorten_color_str(format_vertex(nbr), 80))
         _print_most_likely_paths(ctx, nbr)
 
-def _make_matrix_regex(transition, transition_op, regex, graph,
-                       num_nodes, node):
-    """
-    This has a bad name.
-    Make a new filter whose regex is: node filter.regex
-    That is, start with the node passed in, followed by the regex in filter.
-
-    Args:
-        transition (scipy.sparse.base.spmatrix) Adjacency matrix of graph
-        transition_op (scipy.sparse.linalg.LinearOperator) LinOp of transition
-        regex (semex.semex.Regex)
-        graph (networkx.DiGraph)
-        num_nodes (int)
-        node (vertex.Vertex)
-
-    Returns:
-        semex.semex.Regex
-    """
-    # np.zeros returns a numpy array
-    state = np.zeros(num_nodes)
-    state[node.idx()] = 1.0
-    node_regex = MatrixFilterRegex(num_nodes, state, graph)
-    regex = ConcatRegex(transition, transition_op, node_regex, regex)
-    return regex
-
-def _most_likely_endpoints(ctx, regex, graph, num_nodes, node, num_choose=4):
-    """
-    Calculates the most likely endpoints for the given filter,
-    beginning at node.
-
-    Args:
-        ctx (context.Context)
-        regex (semex.semex.Regex)
-        graph (networkx.DiGraph)
-        num_nodes (int)
-        node (vertex.Vertex) the node to start the paths
-        num_choose (int) the number of endpoints to return
-
-    Returns:
-        list of (int, float) - the index of the node in the graph's nodes array
-            the float is the probability of the endpoint.
-    """
-    this_regex = _make_matrix_regex(ctx.transition,
-                               ctx.transition_op, regex,
-                               graph, num_nodes, node)
-    values = this_regex.linop_calculate_values(num_nodes)
-    most_likely = heapq.nlargest(num_choose, enumerate(values),
-                                 key=lambda p: p[1])
-    # TODO(trevor) num_choose should be able to be 'None' in which case
-    # this returns the entire sorted list
-    return most_likely
-
 def _print_most_likely_paths(ctx, node):
     """
     Calculates and prints the most likely endpoints for all regexes
     in the context provided.
     """
+    from semex.porcelain import make_regex_starting_here, most_likely_endpoints
     indent()
     graph = ctx.graph
     num_nodes = ctx.graph_number_of_nodes()
     for name, val in ctx.regexes().iteritems():
         if not val.active:
             continue
+        # Calculate regex starting at this neighbor node
         regex = val.regex
-        most_likely = _most_likely_endpoints(ctx, regex, graph, num_nodes, node)
+        this_regex = make_regex_starting_here(ctx.transition,
+                                              ctx.transition_op,
+                                              graph,
+                                              num_nodes,
+                                              regex,
+                                              node)
+        most_likely = most_likely_endpoints(this_regex, num_nodes)
         nodes = graph.nodes() # cache this lookup
         pp("%s"%name)
         indent()
