@@ -66,9 +66,8 @@ def _print_neighbors(ctx, cur_node=None):
     nbrs = ctx.sorted_neighbors(node)
     print '_' * 10
     for i, nbr in enumerate(nbrs):
-        print "%d %s %s" % (i,
-                            ctx.graph[node][nbr]['weight'],
-                            shorten_color_str(format_vertex(nbr), 80))
+        print "%d %s" % (i,
+                         shorten_color_str(format_vertex(nbr), 80))
         _print_most_likely_paths(ctx, nbr)
 
 def _make_matrix_filter(transition, transition_op, filter, node):
