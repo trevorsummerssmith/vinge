@@ -1,6 +1,6 @@
 from filters import id, logline, tag
 from regex_parser import *
-from regex import FilterRegex, ConcatRegex, DisjunctRegex, StarRegex, TrivialRegex
+from semex.semex import FilterRegex, ConcatRegex, DisjunctRegex, StarRegex, TrivialRegex
 
 def _base_absyn(graph, node):
     bt = node.base_type

@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 import networkx as nx
 from vinge.graph import make_graph, normalize_graph
-from vinge.regex import TrivialRegex, FilterRegex, ConcatRegex, DisjunctRegex, StarRegex
+from vinge.semex.semex import TrivialRegex, FilterRegex, ConcatRegex, DisjunctRegex, StarRegex
 
 def assert_lists_equal(list1, list2):
     assert sorted(list1) == sorted(list2)

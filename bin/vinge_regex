@@ -14,7 +14,7 @@ from vinge.parser import parse_log_file
 
 from vinge.vertex import LogLineVertex, TagVertex, UniqueIDVertex
 from vinge.filter import FilterSet, Filter
-from vinge.regex import FilterRegex, ConcatRegex, StarRegex, TrivialRegex
+from vinge.semex.semex import FilterRegex, ConcatRegex, StarRegex, TrivialRegex
 import vinge
 import vinge.filters
 

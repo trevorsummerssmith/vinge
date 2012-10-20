@@ -4,7 +4,7 @@ import scipy as sp
 import vinge.filters
 from vinge.regex_ast_to_regex import ast_to_regex
 from vinge.regex_parser import *
-from vinge.regex import *
+from vinge.semex.semex import *
 from vinge.vertex import LogLineVertex, UniqueIDVertex
 
 # Don't care about this graph structure at all.

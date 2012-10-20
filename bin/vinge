@@ -21,7 +21,7 @@ def time_weighting(t1,t2):
     return np.exp(0.0001 * tdelta.total_seconds())
 
 def make_default_regexes(graph, transition, transition_op):
-    from vinge.regex import ConcatRegex, FilterRegex, StarRegex, TrivialRegex
+    from vinge.semex.semex import ConcatRegex, FilterRegex, StarRegex, TrivialRegex
     from vinge.filter import Filter
     from vinge.filters import logline
 
