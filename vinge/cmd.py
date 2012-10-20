@@ -27,8 +27,8 @@ def _print_regexes_header(ctx):
     Pretty prints the regexes
     """
     pp("Regexes: ")
-    for name, filter in ctx.regexes().iteritems():
-        pp("  %s %s" % (name, filter.regex.regex))
+    for name, regex in ctx.regexes().iteritems():
+        pp("  %s %s" % (name, regex.regex))
     # TODO(trevor) wordwrap
 
 def _print_location(ctx, cur_node=None):
@@ -70,7 +70,8 @@ def _print_neighbors(ctx, cur_node=None):
                          shorten_color_str(format_vertex(nbr), 80))
         _print_most_likely_paths(ctx, nbr)
 
-def _make_matrix_filter(transition, transition_op, filter, node):
+def _make_matrix_regex(transition, transition_op, regex, graph,
+                       num_nodes, node):
     """
     This has a bad name.
     Make a new filter whose regex is: node filter.regex
@@ -79,28 +80,31 @@ def _make_matrix_filter(transition, transition_op, filter, node):
     Args:
         transition (scipy.sparse.base.spmatrix) Adjacency matrix of graph
         transition_op (scipy.sparse.linalg.LinearOperator) LinOp of transition
-        filter (filter.Filter)
+        regex (semex.semex.Regex)
+        graph (networkx.DiGraph)
+        num_nodes (int)
         node (vertex.Vertex)
 
     Returns:
-        filter.Filter
+        semex.semex.Regex
     """
     # np.zeros returns a numpy array
-    state = np.zeros(filter.graph.number_of_nodes())
+    state = np.zeros(num_nodes)
     state[node.idx()] = 1.0
-    node_regex = MatrixFilterRegex(filter.graph.number_of_nodes(),
-                                   state, filter.graph)
-    regex = ConcatRegex(transition, transition_op, node_regex, filter.regex)
-    return Filter(regex, filter.graph)
+    node_regex = MatrixFilterRegex(num_nodes, state, graph)
+    regex = ConcatRegex(transition, transition_op, node_regex, regex)
+    return regex
 
-def _most_likely_endpoints(ctx, filter, node, num_choose=4):
+def _most_likely_endpoints(ctx, regex, graph, num_nodes, node, num_choose=4):
     """
     Calculates the most likely endpoints for the given filter,
     beginning at node.
 
     Args:
         ctx (context.Context)
-        filter (filter.Filter)
+        regex (semex.semex.Regex)
+        graph (networkx.DiGraph)
+        num_nodes (int)
         node (vertex.Vertex) the node to start the paths
         num_choose (int) the number of endpoints to return
 
@@ -108,9 +112,10 @@ def _most_likely_endpoints(ctx, filter, node, num_choose=4):
         list of (int, float) - the index of the node in the graph's nodes array
             the float is the probability of the endpoint.
     """
-    this_filter = _make_matrix_filter(ctx.transition,
-                                      ctx.transition_op, filter, node)
-    values = this_filter.calculate_values()
+    this_regex = _make_matrix_regex(ctx.transition,
+                               ctx.transition_op, regex,
+                               graph, num_nodes, node)
+    values = this_regex.linop_calculate_values(num_nodes)
     most_likely = heapq.nlargest(num_choose, enumerate(values),
                                  key=lambda p: p[1])
     # TODO(trevor) num_choose should be able to be 'None' in which case
@@ -123,12 +128,14 @@ def _print_most_likely_paths(ctx, node):
     in the context provided.
     """
     indent()
+    graph = ctx.graph
+    num_nodes = ctx.graph_number_of_nodes()
     for name, val in ctx.regexes().iteritems():
         if not val.active:
             continue
         regex = val.regex
-        most_likely = _most_likely_endpoints(ctx, regex, node)
-        nodes = ctx.graph.nodes() # cache this lookup
+        most_likely = _most_likely_endpoints(ctx, regex, graph, num_nodes, node)
+        nodes = graph.nodes() # cache this lookup
         pp("%s"%name)
         indent()
         for (idx, val) in most_likely:
@@ -217,8 +224,8 @@ def regex_list(ctx, args):
     """
     Prints the current regexes.
     """
-    for name, filter in ctx.regexes().iteritems():
-        pp("  %s: %s" % (name, str(filter.regex.regex)))
+    for name, regex in ctx.regexes().iteritems():
+        pp("  %s: %s" % (name, str(regex.regex)))
 
 def regex_add(ctx, args):
     """
@@ -233,7 +240,6 @@ def regex_add(ctx, args):
 
     Returns: None
     """
-    from vinge.filter import Filter
     from vinge.semex.parser import compile_regex, RegexParseException
     from vinge.semex.ast_to_semex import ast_to_regex
     name = args.name
@@ -243,7 +249,7 @@ def regex_add(ctx, args):
         regex_ast = compile_regex(regex_str)
         regex = ast_to_regex(ctx.graph, ctx.transition, ctx.transition_op, regex_ast)
         # Add to the context
-        ctx.add_regex(name, Filter(regex, ctx.graph))
+        ctx.add_regex(name, regex)
         pp('Successfully added regex')
     except RegexParseException, rpe:
         error("Error parsing regex '%s': %s"%(regex_str, rpe.message))

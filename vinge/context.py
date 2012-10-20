@@ -1,13 +1,13 @@
 from networkx import to_scipy_sparse_matrix
 from scipy.sparse.linalg import aslinearoperator
 
-class ActiveFilter(object):
+class ActiveRegex(object):
     """
-    Simple wrapper around a filter that includes an active boolean.
+    Simple wrapper around a regex that includes an active boolean.
     This is just a named tuple.
 
     Attributes:
-        regex (filter.Filter)
+        regex (semex.semex.Regex)
         active (bool)
     """
     def __init__(self, regex, active=True):
@@ -21,9 +21,9 @@ class Context(object):
     Attributes:
         graph (networkx.DiGraph)
         posn (vertext.Vertex) the current focus of the graph
-        _regexes (dict str -> ActiveFilter):
-            maps name of regex to the ActiveFilter. The ActiveFilter's
-            active attribute is used by the context to keep track of filter
+        _regexes (dict str -> ActiveRegex):
+            maps name of regex to the ActiveRegex. The ActiveRegex's
+            active attribute is used by the context to keep track of regex
             state.
     """
 
@@ -34,6 +34,7 @@ class Context(object):
             posn (vertex.Vertex) node currently 'focused' on
         """
         self.graph = graph
+        self._graph_number_of_nodes = graph.number_of_nodes()
         self.posn = posn
         self._regexes = {}
 
@@ -42,6 +43,10 @@ class Context(object):
         # TODO(trevor) this should be somewhere else. Here be some leaky abstracitions.
         self.transition = to_scipy_sparse_matrix(self.graph)
         self.transition_op = aslinearoperator(self.transition)
+
+    def graph_number_of_nodes(self):
+        # This is just here to cache this lookup. Probably should go elsewhere?
+        return self._graph_number_of_nodes
 
     def sorted_neighbors(self, node):
         """
@@ -60,12 +65,12 @@ class Context(object):
     def regexes(self):
         """
         Returns:
-            list of ActiveFilter
+            list of ActiveRegex
         """
         return self._regexes
 
     def add_regex(self, name, regex, active=True):
-        self._regexes[name] = ActiveFilter(regex, active)
+        self._regexes[name] = ActiveRegex(regex, active)
 
     def remove_regex(self, name):
         del self._regexes[name]

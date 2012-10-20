@@ -108,6 +108,20 @@ class Regex(object):
     def compile_into_linop(self):
         return NotImplemented
 
+    def linop_calculate_values(self, length):
+        """
+        This should export the linear operator compiled in the
+        'compile_into_linop' method as an array of floats.
+
+        Args:
+            length (int) Length of the return vector
+
+        Returns:
+            numpy.array
+        """
+        vals = np.ones(length)
+        return self.compile_into_linop().matvec(vals)
+
     def apply(self, dist):
         return NotImplemented
 

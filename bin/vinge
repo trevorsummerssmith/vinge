@@ -22,7 +22,6 @@ def time_weighting(t1,t2):
 
 def make_default_regexes(graph, transition, transition_op):
     from vinge.semex.semex import ConcatRegex, FilterRegex, StarRegex, TrivialRegex
-    from vinge.filter import Filter
     from vinge.filters import logline
 
     # Create (.*) (logline)
@@ -33,8 +32,7 @@ def make_default_regexes(graph, transition, transition_op):
                                            length=3.0),
                                  FilterRegex(graph.number_of_nodes(), logline, graph)
                                  )
-    ll_reach_filter = Filter(ll_reach_regex, graph)
-    return {'ll_reach' : ll_reach_filter}
+    return {'ll_reach' : ll_reach_regex}
 
 def _info(string):
     # Prints then flushes
