@@ -244,7 +244,7 @@ def regex_add(ctx, args):
         regex_ast = compile_regex(regex_str)
         regex = ast_to_regex(ctx.graph, ctx.transition, ctx.transition_op, regex_ast)
         # Add to the context
-        ctx.regexes[name] = Filter(regex, ctx.graph)
+        ctx.add_regex(name, Filter(regex, ctx.graph))
         pp('Successfully added regex')
     except RegexParseException, rpe:
         error("Error parsing regex '%s': %s"%(regex_str, rpe.message))
