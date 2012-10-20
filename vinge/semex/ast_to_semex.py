@@ -1,6 +1,6 @@
-from filters import id, logline, tag
-from semex.parser import *
-from semex.semex import FilterRegex, ConcatRegex, DisjunctRegex, StarRegex, TrivialRegex
+from vinge.filters import id, logline, tag
+from parser import *
+from semex import FilterRegex, ConcatRegex, DisjunctRegex, StarRegex, TrivialRegex
 
 def _base_absyn(graph, node):
     bt = node.base_type
