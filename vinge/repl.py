@@ -3,6 +3,7 @@ import kct.output as output
 import sys
 
 import vinge.cmd as cmd
+import vinge.help
 
 class _CommandParsingError(Exception):
     def __init__(self, message):
@@ -27,9 +28,8 @@ def _setup_command_parser():
     go_parser.set_defaults(func=cmd.go_by_neighbor_index)
 
     help_parser = subparsers.add_parser('help')
-    # When this is executed it will take the ctx, posn pair
-    # it wants no args
-    help_parser.set_defaults(func=lambda a,b: command_parser.print_help())
+    help_parser.add_argument('topic', nargs='*')
+    help_parser.set_defaults(func=vinge.help.do_help)
 
     # info
     info_parser = subparsers.add_parser('info', aliases=['i'])
