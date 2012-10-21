@@ -59,6 +59,12 @@ def _setup_command_parser():
     regex_toggle_parser.add_argument('name')
     regex_toggle_parser.set_defaults(func=cmd.regex_toggle)
 
+    # regex peek
+    regex_peek_parser = regex_sparser.add_parser('peek')
+    regex_peek_parser.add_argument('name')
+    regex_peek_parser.add_argument('node-ref')
+    regex_peek_parser.set_defaults(func=cmd.regex_peek)
+
     return command_parser
 
 def repl(ctx):

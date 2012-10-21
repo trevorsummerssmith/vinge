@@ -23,6 +23,9 @@ _HELP=\
       'list' :
           '\n'\
           '  Print the current regexes',
+      'peek' :
+          '<regex-name> <node-ref>\n'\
+          '  Print most likely endpoints for the given path',
       'toggle' :
           '<name>\n  Turns regex on or off'
       },

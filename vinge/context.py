@@ -1,6 +1,8 @@
 from networkx import to_scipy_sparse_matrix
 from scipy.sparse.linalg import aslinearoperator
 
+from node_ref import NodeRefType
+
 class ActiveRegex(object):
     """
     Simple wrapper around a regex that includes an active boolean.
@@ -82,3 +84,29 @@ class Context(object):
 
     def regex_set_active(self, name, active):
         self._regexes[name].active = active
+
+    def node_by_node_ref(self, node_ref):
+        """
+        Converts a context and a node_ref to a node.
+
+        Args:
+            node_ref (node_ref.NodeRef)
+
+        Returns:
+            vertex.Vertex
+
+        Raises:
+            ValueError if the node_ref is not valid in ctx
+        """
+        if node_ref.type == NodeRefType.CURRENT:
+            node = self.posn
+        elif node_ref.type == NodeRefType.NEIGHBOR:
+            num_neighbors = len(self.graph[self.posn])
+            idx = node_ref.neighbor_index
+            if idx >= num_neighbors:
+                msg = "Neighbor index out of bounds: "\
+                    "got %d, but only %d neighbors"
+                msg = msg % (idx, num_neighbors)
+                raise ValueError(msg)
+            node = self.sorted_neighbors(self.posn)[idx]
+        return node

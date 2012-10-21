@@ -21,6 +21,7 @@ import heapq
 from vinge.filter import *
 from vinge.node_ref import parse_node_ref, NodeRef, NodeRefType
 from vinge.semex.semex import MatrixFilterRegex, ConcatRegex
+from semex.porcelain import make_regex_starting_here, most_likely_endpoints
 
 def _print_regexes_header(ctx):
     """
@@ -75,7 +76,6 @@ def _print_most_likely_paths(ctx, node):
     Calculates and prints the most likely endpoints for all regexes
     in the context provided.
     """
-    from semex.porcelain import make_regex_starting_here, most_likely_endpoints
     indent()
     graph = ctx.graph
     num_nodes = ctx.graph_number_of_nodes()
@@ -152,22 +152,15 @@ def node_info(ctx, args):
         # TODO(trevor) print node-ref types in help msg
         error("Error %s is not a valid node-ref" % node_ref_str)
         return
-    elif node_ref.type == NodeRefType.CURRENT:
-        _print_location(ctx)
-        _print_regexes_header(ctx)
-        _print_neighbors(ctx)
-    elif node_ref.type == NodeRefType.NEIGHBOR:
-        # Sanity check arg
-        num_neighbors = len(ctx.graph[ctx.posn])
-        if node_ref.neighbor_index >= num_neighbors:
-            msg_args = (node_ref.neighbor_index, num_neighbors)
-            msg = "Neighbor index out of bounds: got %d, but only %d neighbors"
-            error(msg % msg_args)
-            return
-        node = ctx.sorted_neighbors(ctx.posn)[node_ref.neighbor_index]
+
+    try:
+        node = ctx.node_by_node_ref(node_ref)
         _print_location(ctx, node)
         _print_regexes_header(ctx)
         _print_neighbors(ctx, node)
+    except ValueError, ve: # Catch invalid node-ref
+        error(ve)
+        return
 
 def quit(ctx, args):
     print "goodbye (^_^)"
@@ -231,3 +224,25 @@ def regex_toggle(ctx, args):
     except KeyError, ke:
         # TODO(trevor) catching keyerror here is bad. Probs masking something
         error("Unknown regex '%s'" % name)
+
+def regex_peek(ctx, args):
+    name = args.name
+    node_ref_str = getattr(args, 'node-ref')
+    node_ref = parse_node_ref(node_ref_str)
+    if node_ref is None:
+        error("Error %s is not a valid node-ref" % node_ref_str)
+        return
+    node = ctx.node_by_node_ref(node_ref)
+
+    active_regex = ctx.regexes().get(name)
+    if active_regex is None:
+        error("Error unknown regex '%s'" % name)
+    regex = active_regex.regex
+
+    new_regex = make_regex_starting_here(ctx.transition, ctx.transition_op,
+                                         ctx.graph, ctx.graph_number_of_nodes(),
+                                         regex, node)
+    most_likely = most_likely_endpoints(new_regex, ctx.graph_number_of_nodes())
+    for (idx, val) in most_likely:
+        endpoint = ctx.graph.nodes()[idx]
+        pp("%s [%e]" % (str(endpoint)[:80], val))
