@@ -1,67 +1,76 @@
 """
-A regex is:
-filter
-regex | regex
-regex *
-regex regex
+A semex is:
+sensor
+semex | semex
+semex *
+semex semex
 
-TODO [Need to think more carefully about which direction the regex is
-going. There is a conflict between the natural direction of the regex
-and the natural direction of matrix multiplication.]
+We wish to manipulate probability distributions and other weightings
+over the nodes of a Markov chain. We also wish to represent
+probability distributions and other weightings over sets of paths
+through the Markov chain.
 
-We wish to manipulate probability distributions over the nodes of a
-Markov chain. We also want to represent sets of weighted paths through
-the Markov chain, which are naturally represented as linear operators
-over distributions: consider a matrix A, where the entry A_{ij} gives
-the total weight of paths in the path set which start at node #i and
-end at node #j. Multiplying such matrices then correctly concatenates
-all compatible paths from two path sets. Note that we consider these
-matrices operating on row-vectors, as is standard for Markov chains.
+Weighted pathsets are naturally represented as linear operators over
+distributions: consider a matrix A, where the entry A_{ij} gives the
+total weight of paths in the path set which start at node #i and end
+at node #j. Multiplying such matrices then correctly concatenates all
+compatible paths from two path sets. 
 
-Regexes are an intuitive way to specify such linear operators.
+ASIDE: linear algebra is a treacherous subject because it can be done
+in two equivalent ways, with row vectors multiplied by matrices on
+their right, or column vectors multiplied by matrices on their
+left. For the sake of clarity, let us consider only row vectors. (Note
+that this is only sort of clear; in particular, concatenation of
+semexes is the reverse of the corresponding matrix multiplication.) In
+the code below, we use both versions, because this lets us use
+important functionality (linear operators) from scipy. We will put a
+comment whenever we break this convention.
 
-Regexes are implemented as follows. This can be thought of as a
-generalization of the Thompson NFA algorithm for implementing regular
-expression search [1, but see 2 for an exposition intelligible to the
-modern reader].
+Semexes ("semiotic expressions") are an intuitive way to specify such
+linear operators.
 
-  - A filter is a function f from nodes to R, representing a set of
-    paths of length zero (i.e., paths containing a single node and no
-    edges). As a linear operator, it sends d[i] to f(node_i) *
-    d[i]. Filters correspond to diagonal matrices. 
+Semexes are implemented as follows. This can be thought of as a
+weighted version of the Thompson NFA algorithm for implementing
+regular expression search [1, but see 2 for an exposition intelligible
+to the modern reader].
 
-    Filters can be thought of as the emission probabilities of a
+  - A sensor is a function f from nodes to R (the reals), representing
+    a set of paths of length zero (i.e., paths containing a single
+    node and no edges). As a linear operator, it sends d[i] to
+    f(node_i) * d[i]. Sensors correspond to diagonal matrices.
+
+    Sensors can be thought of as the emission probabilities of a
     time-dependent HMM.
 
-  - Disjunction (regex | regex) is the union of two path sets. As a
+  - Disjunction (semex | semex) is the union of two path sets. As a
     linear operator, this is implemented as the sum of the constituent
     linear operators. Note that this causes double counting if the
     choices overlap. We posit that such double counting is not a major
-    concern, but users should be aware of this when crafting regular
+    concern, but users should be aware of this when crafting semiotic
     expressions.
 
-  - The Kleene star (regex *) ... got lazy writing this ...
+  - The Kleene star (sensor semex length *) is the set of all paths of
+    any length, weighted by the sensor at the nodes and the semex at
+    the edges. For technical reasons, we require the user to specify a
+    desired length. The semex will match paths of any length, but it
+    will prefer paths of roughly the specified length.
 
-    TODO [Need to think more carefully about how the transition matrix
-    of the Markov chain appears in the formulae.]
-
-  - Concatentation (regex regex) represents the set of paths formable
-    by joining any path from the first path set with any path from the
-    second path set. The joining takes place along any edge of the
-    Markov chain, and is thus not the standard concatenation of paths
-    one might expect.
+  - Concatentation (semex sensor semex) represents the set of paths
+    formable by joining any path from the first path set with any path
+    from the second path set. The sensor specifies a weighting based
+    on the node used to join the paths.
 
     This is implemented as the product of three linear operators: the
-    linear operator of the first operand, the transition matrix of the
-    Markov chain, and the linear operator of the second operand.
+    linear operator of the first operand, the sensor operator, and the
+    linear operator of the second operand.
 
-Regexes can be compiled, either into a matrix (implemented as a scipy
+Semexes can be compiled, either into a matrix (implemented as a scipy
 sparse matrix when possible, and as a numpy matrix otherwise) or into
 a scipy LinearOperator, which should be far more efficient. The
 LinearOperators are the transposes of the matrices, since
 LinearOperators are designed to be used like (x -> Ax) rather than (x
 -> xA). The second fits more naturally with Markov chains and the
-semantics of regular expressions.
+semantics of semiotic expressions.
 
 References:
 
@@ -101,7 +110,7 @@ def scl(a,s):
         return s * a.matvec(v)
     return LinearOperator(a.shape, matvec=matvec)
 
-class Regex(object):
+class Semex(object):
     def compile_into_matrix(self):
         return NotImplemented
 
@@ -136,7 +145,7 @@ class Regex(object):
         """
         return NotImplemented
 
-class TrivialRegex(Regex):
+class TrivialSemex(Semex):
     def __init__(self, nnodes):
         self.nnodes = nnodes
         self._cached_linop = None
@@ -154,38 +163,38 @@ class TrivialRegex(Regex):
         return dist.copy()
 
     def __cmp__(self, other):
-        if not isinstance(other, TrivialRegex):
+        if not isinstance(other, TrivialSemex):
             return cmp(self, other)
         return cmp(self.nnodes, other.nnodes)
 
     def __str__(self):
         return '.'
 
-class FilterRegex(Regex):
-    def __init__(self, nnodes, thefilter, graph):
-        ''' thefilter: maps integer ids to reals
+class SensorSemex(Semex):
+    def __init__(self, nnodes, thesensor, graph):
+        ''' thesensor: maps integer ids to reals
         '''
         self.nnodes = nnodes 
-        self.thefilter = thefilter
+        self.thesensor = thesensor
         self.graph = graph
-        self._filter_vector = self._create_filter_vector()
+        self._sensor_vector = self._create_sensor_vector()
         self._cached_linop = None
 
-    def _create_filter_vector(self):
+    def _create_sensor_vector(self):
         """
-        Applies self.thefilter to self.graph to make a vector of the results.
+        Applies self.thesensor to self.graph to make a vector of the results.
         Returns: numpy.array
         """
         vector = np.zeros(self.graph.number_of_nodes())
         for i, node in enumerate(self.graph.nodes_iter()):
-            vector[i] = self.thefilter(node)
+            vector[i] = self.thesensor(node)
         return vector
 
     def compile_into_matrix(self):
-        filter_values = np.zeros(self.nnodes)
+        sensor_values = np.zeros(self.nnodes)
         for i in xrange(self.nnodes):
-            filter_values[i] = self.thefilter(i)
-        return sp.sparse.spdiags(filter_values, [0], self.nnodes, self.nnodes)
+            sensor_values[i] = self.thesensor(i)
+        return sp.sparse.spdiags(sensor_values, [0], self.nnodes, self.nnodes)
 
     def compile_into_linop(self):
         if self._cached_linop:
@@ -194,37 +203,37 @@ class FilterRegex(Regex):
         return self._cached_linop
 
     def apply(self, dist):
-        # self._filter_vector is a numpy array is '*' does element-wise
+        # self._sensor_vector is a numpy array. '*' does element-wise
         # multiplication
-        return dist * self._filter_vector
+        return dist * self._sensor_vector
 
     def __cmp__(self, other):
-        if not isinstance(other, FilterRegex):
+        if not isinstance(other, SensorSemex):
             return cmp(self, other)
         else:
-            return cmp((self.nnodes, self.thefilter, self.graph),
-                       (other.nnodes, other.thefilter, other.graph))
+            return cmp((self.nnodes, self.thesensor, self.graph),
+                       (other.nnodes, other.thesensor, other.graph))
 
     def __str__(self):
-        return "%s" % self.thefilter.__name__
+        return "%s" % self.thesensor.__name__
 
-class MatrixFilterRegex(Regex):
-    def __init__(self, nnodes, thefilter, graph):
+class MatrixSensorSemex(Semex):
+    def __init__(self, nnodes, thesensor, graph):
         ''' thefilter: vector
         This is a convenience. It provides the same functionality
-        as FilterRegex, excpet the user provides a matrix instead of a function
+        as SensorSemex, excpet the user provides a matrix instead of a function
         '''
         # TODO(trevor) clean this up. Probably merge MatrixFilter with Filter?
         self.nnodes = nnodes
-        self.thefilter = thefilter
+        self.thesensor = thesensor
         self.graph = graph
         self._cached_linop = None
 
     def compile_into_matrix(self):
-        filter_values = np.zeros(self.nnodes)
+        sensor_values = np.zeros(self.nnodes)
         for i in xrange(self.nnodes):
-            filter_values[i] = self.thefilter(i)
-        return sp.sparse.spdiags(filter_values, [0], self.nnodes, self.nnodes)
+            sensor_values[i] = self.thesensor(i)
+        return sp.sparse.spdiags(sensor_values, [0], self.nnodes, self.nnodes)
 
     def compile_into_linop(self):
         if self._cached_linop:
@@ -234,18 +243,18 @@ class MatrixFilterRegex(Regex):
 
     def apply(self, dist):
         # We want element-wise multiplication
-        # self.thefilter is an array
-        return self.thefilter * dist
+        # self.thesensor is an array
+        return self.thesensor * dist
 
     def __cmp__(self, other):
-        if not isinstance(other, MatrixFilterRegex):
+        if not isinstance(other, MatrixSensorSemex):
             return cmp(self, other)
         else:
-            return cmp((self.nnodes, self.thefilter, self.graph),
-                       (other.nnodes, other.thefilter, other.graph))
+            return cmp((self.nnodes, self.thesensor, self.graph),
+                       (other.nnodes, other.thesensor, other.graph))
 
 #TODO: do we want to specify weights on the alternatives?
-class DisjunctRegex(Regex):
+class DisjunctSemex(Semex):
     def __init__(self, poss1, poss2):
         self.poss1 = poss1
         self.poss2 = poss2
@@ -271,7 +280,7 @@ class DisjunctRegex(Regex):
         return dist1 + dist2
 
     def __cmp__(self, other):
-        if not isinstance(other, DisjunctRegex):
+        if not isinstance(other, DisjunctSemex):
             return cmp(self, other)
         else:
             return cmp((self.poss1, self.poss2),
@@ -280,7 +289,7 @@ class DisjunctRegex(Regex):
     def __str__(self):
         return "(%s|%s)" % (self.poss1, self.poss2)
 
-class StarRegex(Regex):
+class StarSemex(Semex):
     def __init__(self, transition, transition_op, nnodes, inside, length):
         self.transition = transition
         self.transition_op = transition_op
@@ -383,7 +392,7 @@ class StarRegex(Regex):
     def __str__(self):
         return "(%s)*" % self.inside
 
-class ConcatRegex(Regex):
+class ConcatSemex(Semex):
     def __init__(self, transition, transition_op, part1, part2):
         self.transition = transition
         self.transition_op = transition_op

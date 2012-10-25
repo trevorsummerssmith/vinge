@@ -3,7 +3,7 @@ Commands for interacting with regexes.
 """
 
 from heapq import nlargest
-from semex import ConcatRegex, MatrixFilterRegex
+from semex import ConcatSemex, MatrixSensorSemex
 
 import numpy as np
 
@@ -11,7 +11,7 @@ def make_regex_starting_here(transition,
                              transition_op,
                              graph,
                              num_nodes,
-                             regex,
+                             semex,
                              node):
     """
     Make a new regex: node regex
@@ -30,11 +30,11 @@ def make_regex_starting_here(transition,
     """
     state = np.zeros(num_nodes)
     state[node.idx()] = 1.0
-    node_regex = MatrixFilterRegex(num_nodes, state, graph)
-    new_regex = ConcatRegex(transition, transition_op, node_regex, regex)
-    return new_regex
+    node_semex = MatrixSensorSemex(num_nodes, state, graph)
+    new_semex = ConcatSemex(transition, transition_op, node_semex, semex)
+    return new_semex
 
-def most_likely_endpoints(regex, length, num_choose=4):
+def most_likely_endpoints(semex, length, num_choose=4):
     """
     Calculates the most likely endpoints for the given regex.
     This assumes a uniform starting distribution.
@@ -48,7 +48,7 @@ def most_likely_endpoints(regex, length, num_choose=4):
         list of (int, float) - the index of the node in the graph's nodes array
             the float is the probability of the endpoint.
     """
-    values = regex.linop_calculate_values(length)
+    values = semex.linop_calculate_values(length)
     most_likely = nlargest(num_choose, enumerate(values),
                            key=lambda p: p[1])
     # TODO(trevor) num_choose should be able to be 'None' in which case

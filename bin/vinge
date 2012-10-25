@@ -21,16 +21,16 @@ def time_weighting(t1,t2):
     return np.exp(0.0001 * tdelta.total_seconds())
 
 def make_default_regexes(graph, transition, transition_op):
-    from vinge.semex.semex import ConcatRegex, FilterRegex, StarRegex, TrivialRegex
+    from vinge.semex.semex import ConcatSemex, SensorSemex, StarSemex, TrivialSemex
     from vinge.filters import logline
 
     # Create (.*) (logline)
 
-    ll_reach_regex = ConcatRegex(transition, transition_op,
-                                 StarRegex(transition, transition_op, graph.number_of_nodes(),
-                                           TrivialRegex(graph.number_of_nodes()),
+    ll_reach_regex = ConcatSemex(transition, transition_op,
+                                 StarSemex(transition, transition_op, graph.number_of_nodes(),
+                                           TrivialSemex(graph.number_of_nodes()),
                                            length=3.0),
-                                 FilterRegex(graph.number_of_nodes(), logline, graph)
+                                 SensorSemex(graph.number_of_nodes(), logline, graph)
                                  )
     return {'ll_reach' : ll_reach_regex}
 

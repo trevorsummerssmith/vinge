@@ -20,7 +20,7 @@ import sys
 import heapq
 from vinge.filter import *
 from vinge.node_ref import parse_node_ref, NodeRef, NodeRefType
-from vinge.semex.semex import MatrixFilterRegex, ConcatRegex
+from vinge.semex.semex import MatrixSensorSemex, ConcatSemex
 from semex.porcelain import make_regex_starting_here, most_likely_endpoints
 
 def _print_regexes_header(ctx):
