@@ -15,19 +15,19 @@ import kct.color as color
 _HELP=\
 {'node-ref' :
      {'_msg' : "this is information about a node-ref"},
- 'regex' :
-     {'_msg' : 'Interact with regexes',
+ 'path-set' :
+     {'_msg' : 'Interact with path sets (semexes)',
       'add' :
-          '<name> <regex>\n'\
+          '<name> <semex>\n'\
           '  And some!',
       'list' :
           '\n'\
-          '  Print the current regexes',
+          '  Print the current path sets',
       'peek' :
-          '<regex-name> <node-ref>\n'\
-          '  Print most likely endpoints for the given path',
+          '<name> <node-ref>\n'\
+          '  Print most likely endpoints for the given path set',
       'toggle' :
-          '<name>\n  Turns regex on or off'
+          '<name>\n  Turns path set on or off'
       },
  'go' :
      {'_msg' : '<index>\n  The neighbor index'},

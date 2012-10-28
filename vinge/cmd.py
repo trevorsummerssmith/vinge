@@ -27,7 +27,7 @@ def _print_semexes_header(ctx):
     """
     Pretty prints the semexes
     """
-    pp("Regexes: ")
+    pp("Path Sets: ")
     for name, semex in ctx.semexes().iteritems():
         pp("  %s %s" % (name, semex.semex))
     # TODO(trevor) wordwrap
@@ -82,7 +82,7 @@ def _print_most_likely_paths(ctx, node):
     for name, val in ctx.semexes().iteritems():
         if not val.active:
             continue
-        # Calculate regex starting at this neighbor node
+        # Calculate semex starting at this neighbor node
         semex = val.semex
         this_semex = make_semex_starting_here(ctx.transition,
                                               ctx.transition_op,
@@ -167,45 +167,47 @@ def quit(ctx, args):
     sys.exit(0)
 
 #
-# Regex
+# Path-set
+# note: 'path sets' are described using semexes. its just easier
+# to talk about path sets with the user, rather than semex
 #
-def regex_list(ctx, args):
+def semex_list(ctx, args):
     """
-    Prints the current regexes.
+    Prints the current semexes.
     """
     for name, semex in ctx.semexes().iteritems():
         pp("  %s: %s" % (name, str(semex.semex)))
 
-def regex_add(ctx, args):
+def semex_add(ctx, args):
     """
-    Adds a regex to the context's list of regexes.
+    Adds a semex to the context's list of semexes.
 
     Args:
         ctx (context.Context)
         args (kct.argparse.Namepsace)
-        args.name (str) - used to refer to the regex
-        args.regex-str (str) - the regex in string form. A valid argument to
-            regex_parser.compile_regex
+        args.name (str) - used to refer to the semex
+        args.semex-str (str) - the semex in string form. A valid argument to
+            semex.parser.compile_regex
 
     Returns: None
     """
     from vinge.semex.parser import compile_regex, RegexParseException
     from vinge.semex.ast_to_semex import ast_to_semex
     name = args.name
-    # argparse gives us an array of strings as the regex-str. We want a string
-    regex_str = ' '.join(getattr(args, 'regex-str'))
+    # argparse gives us an array of strings as the semex-str. We want a string
+    semex_str = ' '.join(getattr(args, 'semex-str'))
     try:
-        regex_ast = compile_regex(regex_str)
-        semex = ast_to_semex(ctx.graph, ctx.transition, ctx.transition_op, regex_ast)
+        semex_ast = compile_regex(semex_str)
+        semex = ast_to_semex(ctx.graph, ctx.transition, ctx.transition_op, semex_ast)
         # Add to the context
         ctx.add_semex(name, semex)
-        pp('Successfully added regex')
+        pp('Successfully added path set')
     except RegexParseException, rpe:
-        error("Error parsing regex '%s': %s"%(regex_str, rpe.message))
+        error("Error parsing path set (semex) '%s': %s"%(semex_str, rpe.message))
 
 _bool_to_active = {True:color.green('active'), False:color.red('inactive')}
 
-def regex_toggle(ctx, args):
+def semex_toggle(ctx, args):
     """
     Swaps the active status of the provided semex. Active semexes are used in
     various display commands (see e.g. cmd.node_info).
@@ -213,7 +215,7 @@ def regex_toggle(ctx, args):
     Args:
         ctx (context.Context)
         args (kct.argparse.Namepsace)
-        args.name (str) - used to refer to the regex
+        args.name (str) - used to refer to the semex
 
     Returns: None
     """
@@ -223,9 +225,9 @@ def regex_toggle(ctx, args):
         info("%s is now %s" % (name, _bool_to_active[is_active]))
     except KeyError, ke:
         # TODO(trevor) catching keyerror here is bad. Probs masking something
-        error("Unknown regex '%s'" % name)
+        error("Unknown path set '%s'" % name)
 
-def regex_peek(ctx, args):
+def semex_peek(ctx, args):
     name = args.name
     node_ref_str = getattr(args, 'node-ref')
     node_ref = parse_node_ref(node_ref_str)
@@ -236,7 +238,7 @@ def regex_peek(ctx, args):
 
     active_semex = ctx.semexes().get(name)
     if active_semex is None:
-        error("Error unknown semex '%s'" % name)
+        error("Error unknown path set '%s'" % name)
     semex = active_semex.semex
 
     new_semex = make_semex_starting_here(ctx.transition, ctx.transition_op,

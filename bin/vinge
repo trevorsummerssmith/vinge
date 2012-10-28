@@ -60,7 +60,7 @@ def init(filename):
     output.pp("done")
 
     # Make some default semexes
-    _info("Compiling default regexes... ")
+    _info("Compiling default path sets... ")
     semexes = make_default_semexes(graph, ctx.transition, ctx.transition_op)
     for name, semex in semexes.items():
         ctx.add_semex(name, semex, active=False)
