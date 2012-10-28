@@ -137,11 +137,12 @@ class Semex(object):
     def __str__(self):
         """
         Implementors of this class must export a valid string representation
-        this regex ie:
+        this semex ie:
           >>> from parse_regex import compile_regex
-          >>> regex = compile_regex(".*")
-          >>> regex2 = compile_regex(str(regex))
-          >>> regex == regex2
+          >>> from ast_to_semex import ast_to_semex
+          >>> semex1 = ast_to_semex(compile_regex(".*"))
+          >>> semex2 = ast_to_semex(compile_regex(str(semex1)))
+          >>> semex1 == semex2
         """
         return NotImplemented
 
@@ -382,7 +383,7 @@ class StarSemex(Semex):
         return linop.matvec(dist)
 
     def __cmp__(self, other):
-        if not isinstance(other, StarRegex):
+        if not isinstance(other, StarSemex):
             return cmp(self, other)
         else:
             return cmp((self.transition, self.transition_op, self.nnodes,
@@ -423,7 +424,7 @@ class ConcatSemex(Semex):
         return dist2
 
     def __cmp__(self, other):
-        if not isinstance(other, ConcatRegex):
+        if not isinstance(other, ConcatSemex):
             return cmp(self, other)
         else:
             return cmp((self.transition, self.transition_op,
