@@ -21,15 +21,15 @@ import heapq
 from vinge.filter import *
 from vinge.node_ref import parse_node_ref, NodeRef, NodeRefType
 from vinge.semex.semex import MatrixSensorSemex, ConcatSemex
-from semex.porcelain import make_regex_starting_here, most_likely_endpoints
+from semex.porcelain import make_semex_starting_here, most_likely_endpoints
 
-def _print_regexes_header(ctx):
+def _print_semexes_header(ctx):
     """
-    Pretty prints the regexes
+    Pretty prints the semexes
     """
     pp("Regexes: ")
-    for name, regex in ctx.regexes().iteritems():
-        pp("  %s %s" % (name, regex.regex))
+    for name, semex in ctx.semexes().iteritems():
+        pp("  %s %s" % (name, semex.semex))
     # TODO(trevor) wordwrap
 
 def _print_location(ctx, cur_node=None):
@@ -73,24 +73,24 @@ def _print_neighbors(ctx, cur_node=None):
 
 def _print_most_likely_paths(ctx, node):
     """
-    Calculates and prints the most likely endpoints for all regexes
+    Calculates and prints the most likely endpoints for all semexes
     in the context provided.
     """
     indent()
     graph = ctx.graph
     num_nodes = ctx.graph_number_of_nodes()
-    for name, val in ctx.regexes().iteritems():
+    for name, val in ctx.semexes().iteritems():
         if not val.active:
             continue
         # Calculate regex starting at this neighbor node
-        regex = val.regex
-        this_regex = make_regex_starting_here(ctx.transition,
+        semex = val.semex
+        this_semex = make_semex_starting_here(ctx.transition,
                                               ctx.transition_op,
                                               graph,
                                               num_nodes,
-                                              regex,
+                                              semex,
                                               node)
-        most_likely = most_likely_endpoints(this_regex, num_nodes)
+        most_likely = most_likely_endpoints(this_semex, num_nodes)
         nodes = graph.nodes() # cache this lookup
         pp("%s"%name)
         indent()
@@ -132,7 +132,7 @@ def go_by_vertex(ctx, args):
     """
     ctx.posn = args.vertex
     _print_location(ctx)
-    _print_regexes_header(ctx)
+    _print_semexes_header(ctx)
     _print_neighbors(ctx)
 
 def node_info(ctx, args):
@@ -156,7 +156,7 @@ def node_info(ctx, args):
     try:
         node = ctx.node_by_node_ref(node_ref)
         _print_location(ctx, node)
-        _print_regexes_header(ctx)
+        _print_semexes_header(ctx)
         _print_neighbors(ctx, node)
     except ValueError, ve: # Catch invalid node-ref
         error(ve)
@@ -173,8 +173,8 @@ def regex_list(ctx, args):
     """
     Prints the current regexes.
     """
-    for name, regex in ctx.regexes().iteritems():
-        pp("  %s: %s" % (name, str(regex.regex)))
+    for name, semex in ctx.semexes().iteritems():
+        pp("  %s: %s" % (name, str(semex.semex)))
 
 def regex_add(ctx, args):
     """
@@ -190,15 +190,15 @@ def regex_add(ctx, args):
     Returns: None
     """
     from vinge.semex.parser import compile_regex, RegexParseException
-    from vinge.semex.ast_to_semex import ast_to_regex
+    from vinge.semex.ast_to_semex import ast_to_semex
     name = args.name
     # argparse gives us an array of strings as the regex-str. We want a string
     regex_str = ' '.join(getattr(args, 'regex-str'))
     try:
         regex_ast = compile_regex(regex_str)
-        regex = ast_to_regex(ctx.graph, ctx.transition, ctx.transition_op, regex_ast)
+        semex = ast_to_semex(ctx.graph, ctx.transition, ctx.transition_op, regex_ast)
         # Add to the context
-        ctx.add_regex(name, regex)
+        ctx.add_semex(name, semex)
         pp('Successfully added regex')
     except RegexParseException, rpe:
         error("Error parsing regex '%s': %s"%(regex_str, rpe.message))
@@ -207,7 +207,7 @@ _bool_to_active = {True:color.green('active'), False:color.red('inactive')}
 
 def regex_toggle(ctx, args):
     """
-    Swaps the active status of the provided regex. Active regexes are used in
+    Swaps the active status of the provided semex. Active semexes are used in
     various display commands (see e.g. cmd.node_info).
 
     Args:
@@ -219,7 +219,7 @@ def regex_toggle(ctx, args):
     """
     name = args.name
     try:
-        is_active = not ctx.regex_toggle_active(name)
+        is_active = not ctx.semex_toggle_active(name)
         info("%s is now %s" % (name, _bool_to_active[is_active]))
     except KeyError, ke:
         # TODO(trevor) catching keyerror here is bad. Probs masking something
@@ -234,15 +234,15 @@ def regex_peek(ctx, args):
         return
     node = ctx.node_by_node_ref(node_ref)
 
-    active_regex = ctx.regexes().get(name)
-    if active_regex is None:
-        error("Error unknown regex '%s'" % name)
-    regex = active_regex.regex
+    active_semex = ctx.semexes().get(name)
+    if active_semex is None:
+        error("Error unknown semex '%s'" % name)
+    semex = active_semex.semex
 
-    new_regex = make_regex_starting_here(ctx.transition, ctx.transition_op,
+    new_semex = make_semex_starting_here(ctx.transition, ctx.transition_op,
                                          ctx.graph, ctx.graph_number_of_nodes(),
-                                         regex, node)
-    most_likely = most_likely_endpoints(new_regex, ctx.graph_number_of_nodes())
+                                         semex, node)
+    most_likely = most_likely_endpoints(new_semex, ctx.graph_number_of_nodes())
     for (idx, val) in most_likely:
         endpoint = ctx.graph.nodes()[idx]
         pp("%s [%e]" % (str(endpoint)[:80], val))

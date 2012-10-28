@@ -20,19 +20,19 @@ def time_weighting(t1,t2):
     tdelta = -abs(t2-t1)
     return np.exp(0.0001 * tdelta.total_seconds())
 
-def make_default_regexes(graph, transition, transition_op):
+def make_default_semexes(graph, transition, transition_op):
     from vinge.semex.semex import ConcatSemex, SensorSemex, StarSemex, TrivialSemex
     from vinge.filters import logline
 
     # Create (.*) (logline)
 
-    ll_reach_regex = ConcatSemex(transition, transition_op,
+    ll_reach_semex = ConcatSemex(transition, transition_op,
                                  StarSemex(transition, transition_op, graph.number_of_nodes(),
                                            TrivialSemex(graph.number_of_nodes()),
                                            length=3.0),
                                  SensorSemex(graph.number_of_nodes(), logline, graph)
                                  )
-    return {'ll_reach' : ll_reach_regex}
+    return {'ll_reach' : ll_reach_semex}
 
 def _info(string):
     # Prints then flushes
@@ -59,11 +59,11 @@ def init(filename):
     ctx = Context(graph)
     output.pp("done")
 
-    # Make some default regexes
+    # Make some default semexes
     _info("Compiling default regexes... ")
-    regexes = make_default_regexes(graph, ctx.transition, ctx.transition_op)
-    for name, regex in regexes.items():
-        ctx.add_regex(name, regex, active=False)
+    semexes = make_default_semexes(graph, ctx.transition, ctx.transition_op)
+    for name, semex in semexes.items():
+        ctx.add_semex(name, semex, active=False)
     output.pp("done")
     return (log_line_vertices, ctx)
 
