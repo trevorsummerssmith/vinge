@@ -3,17 +3,17 @@ from scipy.sparse.linalg import aslinearoperator
 
 from node_ref import NodeRefType
 
-class ActiveRegex(object):
+class ActiveSemex(object):
     """
-    Simple wrapper around a regex that includes an active boolean.
+    Simple wrapper around a semex that includes an active boolean.
     This is just a named tuple.
 
     Attributes:
-        regex (semex.semex.Regex)
+        semex (semex.semex.Semex)
         active (bool)
     """
-    def __init__(self, regex, active=True):
-        self.regex = regex
+    def __init__(self, semex, active=True):
+        self.semex = semex
         self.active = active
 
 class Context(object):
@@ -23,9 +23,9 @@ class Context(object):
     Attributes:
         graph (networkx.DiGraph)
         posn (vertext.Vertex) the current focus of the graph
-        _regexes (dict str -> ActiveRegex):
-            maps name of regex to the ActiveRegex. The ActiveRegex's
-            active attribute is used by the context to keep track of regex
+        _semexes (dict str -> ActiveSemex):
+            maps name of semex to the ActiveSemex. The ActiveSemex's
+            active attribute is used by the context to keep track of semex
             state.
     """
 
@@ -38,10 +38,10 @@ class Context(object):
         self.graph = graph
         self._graph_number_of_nodes = graph.number_of_nodes()
         self.posn = posn
-        self._regexes = {}
+        self._semexes = {}
 
         # Compute adjacency matrix and linear operator of adjacency matrix
-        # For graph. We need this for our regexes.
+        # For graph. We need this for our semexes.
         # TODO(trevor) this should be somewhere else. Here be some leaky abstracitions.
         self.transition = to_scipy_sparse_matrix(self.graph)
         self.transition_op = aslinearoperator(self.transition)
@@ -64,26 +64,26 @@ class Context(object):
         """
         return sorted(self.graph[node])
 
-    def regexes(self):
+    def semexes(self):
         """
         Returns:
-            list of ActiveRegex
+            list of ActiveSemex
         """
-        return self._regexes
+        return self._semexes
 
-    def add_regex(self, name, regex, active=True):
-        self._regexes[name] = ActiveRegex(regex, active)
+    def add_semex(self, name, semex, active=True):
+        self._semexes[name] = ActiveSemex(semex, active)
 
-    def remove_regex(self, name):
-        del self._regexes[name]
+    def remove_semex(self, name):
+        del self._semexes[name]
 
-    def regex_toggle_active(self, name):
-        old = self._regexes[name].active
-        self._regexes[name].active = not old
+    def semex_toggle_active(self, name):
+        old = self._semexes[name].active
+        self._semexes[name].active = not old
         return old
 
-    def regex_set_active(self, name, active):
-        self._regexes[name].active = active
+    def semex_set_active(self, name, active):
+        self._semexes[name].active = active
 
     def node_by_node_ref(self, node_ref):
         """

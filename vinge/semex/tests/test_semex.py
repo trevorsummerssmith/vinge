@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 import networkx as nx
 from vinge.graph import make_graph, normalize_graph
-from vinge.semex.semex import TrivialRegex, FilterRegex, ConcatRegex, DisjunctRegex, StarRegex
+from vinge.semex.semex import TrivialSemex, SensorSemex, ConcatSemex, DisjunctSemex, StarSemex
 
 def assert_lists_equal(list1, list2):
     assert sorted(list1) == sorted(list2)
@@ -43,16 +43,22 @@ transition_op = sp.sparse.linalg.aslinearoperator(transition)
 initial_distro = np.arange(20.0)
 initial_distro = initial_distro / sum(initial_distro)
 
-class TestRegex:
-    def test_trivial_regex(self):
-        re = TrivialRegex(20)
-        re_mat = re.compile_into_matrix()
-        re_linop = re.compile_into_linop()
+def apply_semex(semex):
+    # apply semex to the initial distribution
+    semex_matrix = semex.compile_into_matrix()
+    semex_linop = semex.compile_into_linop()
 
-        dist_apply = re.apply(initial_distro)
-        dist_mat = initial_distro * re_mat
-        dist_linop = re_linop.matvec(initial_distro)
+    dist_apply = semex.apply(initial_distro)
+    dist_matrix = initial_distro * semex_matrix
+    dist_linop = semex_linop.matvec(initial_distro)
 
+    return (dist_apply, dist_matrix, dist_linop)
+
+
+class TestSemex:
+    def test_trivial_semex(self):
+        se = TrivialSemex(20)
+        (dist_apply, dist_mat, dist_linop) = apply_semex(se)
         dist_hand = initial_distro
 
         # note that approximate equality isn't transitive!
@@ -63,14 +69,9 @@ class TestRegex:
         np.testing.assert_allclose(dist_apply, dist_linop)
         np.testing.assert_allclose(dist_mat, dist_linop)
 
-    def test_starts_with_a_filter_regex(self):
-        re = FilterRegex(20, starts_with_a, gf)
-        re_mat = re.compile_into_matrix()
-        re_linop = re.compile_into_linop()
-
-        dist_apply = re.apply(initial_distro)
-        dist_mat = initial_distro * re_mat
-        dist_linop = re_linop.matvec(initial_distro)
+    def test_starts_with_a_sensor_semex(self):
+        se = SensorSemex(20, starts_with_a, gf)
+        (dist_apply, dist_mat, dist_linop) = apply_semex(se)
 
         dist_hand = initial_distro.copy()
         for i, label in enumerate(labels):
@@ -85,14 +86,9 @@ class TestRegex:
         np.testing.assert_allclose(dist_apply, dist_linop)
         np.testing.assert_allclose(dist_mat, dist_linop)
 
-    def test_length_filter_regex(self):
-        re = FilterRegex(20, length_filter, gf)
-        re_mat = re.compile_into_matrix()
-        re_linop = re.compile_into_linop()
-
-        dist_apply = re.apply(initial_distro)
-        dist_mat = initial_distro * re_mat
-        dist_linop = re_linop.matvec(initial_distro)
+    def test_length_sensor_semex(self):
+        se = SensorSemex(20, length_filter, gf)
+        (dist_apply, dist_mat, dist_linop) = apply_semex(se)
 
         dist_hand = (initial_distro * 
                      np.array(([np.exp(-0.3)]*2) +
@@ -108,17 +104,11 @@ class TestRegex:
         np.testing.assert_allclose(dist_apply, dist_linop)
         np.testing.assert_allclose(dist_mat, dist_linop)
 
-    def test_concat_filter_regex(self):
-        re1 = FilterRegex(20, length_filter, gf)
-        re2 = FilterRegex(20, starts_with_a, gf)
-        re3 = ConcatRegex(transition, transition_op, re1, re2)
-
-        re3_mat = re3.compile_into_matrix()
-        re3_linop = re3.compile_into_linop()
-        
-        dist_apply = re3.apply(initial_distro)
-        dist_mat = initial_distro * re3_mat
-        dist_linop = re3_linop.matvec(initial_distro)
+    def test_concat_sensor_semex(self):
+        se1 = SensorSemex(20, length_filter, gf)
+        se2 = SensorSemex(20, starts_with_a, gf)
+        se3 = ConcatSemex(transition, transition_op, se1, se2)
+        (dist_apply, dist_mat, dist_linop) = apply_semex(se3)
 
         # construct the answer by another method to cross-check
         # step 1: apply the first filter
@@ -146,18 +136,12 @@ class TestRegex:
         np.testing.assert_allclose(dist_apply, dist_linop)
         np.testing.assert_allclose(dist_mat, dist_linop)
 
-    def test_disjunct_filter_regex(self):
-        re1 = FilterRegex(20, length_filter, gf)
-        re2 = FilterRegex(20, starts_with_a, gf)
-        re3 = DisjunctRegex(re1, re2)
+    def test_disjunct_sensor_semex(self):
+        se1 = SensorSemex(20, length_filter, gf)
+        se2 = SensorSemex(20, starts_with_a, gf)
+        se3 = DisjunctSemex(se1, se2)
+        (dist_apply, dist_mat, dist_linop) = apply_semex(se3)
 
-        re3_mat = re3.compile_into_matrix()
-        re3_linop = re3.compile_into_linop()
-
-        dist_apply = re3.apply(initial_distro)
-        dist_mat = initial_distro * re3_mat
-        dist_linop = re3_linop.matvec(initial_distro)
-        
         dist_hand = (initial_distro * 
                      np.array(([np.exp(-0.3)]*2) +
                               ([np.exp(-0.6)]*4) +
@@ -166,7 +150,7 @@ class TestRegex:
         for i, label in enumerate(labels):
             if label[0] == 'a':
                 dist_hand[i] += initial_distro[i]
-                
+
         # note that approximate equality isn't transitive!
         np.testing.assert_allclose(dist_apply, dist_hand)
         np.testing.assert_allclose(dist_mat, dist_hand)
@@ -175,16 +159,16 @@ class TestRegex:
         np.testing.assert_allclose(dist_apply, dist_linop)
         np.testing.assert_allclose(dist_mat, dist_linop)
 
-    def test_star_regex(self):
-        re1 = TrivialRegex(20)
-        re2 = StarRegex(transition, transition_op, 20, re1, 3)
-        
-        re2_mat = re2.compile_into_matrix()
-        re2_linop = re2.compile_into_linop()
+    def test_star_semex(self):
+        se1 = TrivialSemex(20)
+        se2 = StarSemex(transition, transition_op, 20, se1, 3)
 
-        dist_apply = re2.apply(initial_distro)
-        dist_mat = np.dot(initial_distro, re2_mat)
-        dist_linop = re2_linop.matvec(initial_distro)
+        se2_mat = se2.compile_into_matrix()
+        se2_linop = se2.compile_into_linop()
+
+        dist_apply = se2.apply(initial_distro)
+        dist_mat = np.dot(initial_distro, se2_mat)
+        dist_linop = se2_linop.matvec(initial_distro)
 
         pathlength = 3.0
         pstop = 1.0 / pathlength
@@ -201,7 +185,7 @@ class TestRegex:
 
         # The tolerance on this test had to be increased a bit to make
         # it pass, but I think that's OK.
-        np.testing.assert_allclose(star_hand, re2_mat, rtol=1e-04, atol=1e-08)
+        np.testing.assert_allclose(star_hand, se2_mat, rtol=1e-04, atol=1e-08)
 
         dist_hand = np.dot(initial_distro, np.array(star_hand))
 
@@ -219,8 +203,3 @@ class TestRegex:
                                    rtol=1e-04, atol=1e-08)
         np.testing.assert_allclose(dist_mat, dist_linop, 
                                    rtol=1e-04, atol=1e-08)
-
-
-
-foo = TestRegex()
-foo.test_star_regex()

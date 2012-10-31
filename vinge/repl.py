@@ -40,30 +40,30 @@ def _setup_command_parser():
     quit_parser = subparsers.add_parser('quit')
     quit_parser.set_defaults(func=cmd.quit)
 
-    # regex commands
-    regex_parser = subparsers.add_parser('regex', aliases=['r'])
-    regex_sparser = regex_parser.add_subparsers()
+    # path-set commands
+    path_set_parser = subparsers.add_parser('path-set', aliases=['ps'])
+    path_set_sparser = path_set_parser.add_subparsers()
 
-    # regex list
-    regex_list_parser = regex_sparser.add_parser('list', aliases=['l'])
-    regex_list_parser.set_defaults(func=cmd.regex_list)
+    # path-set list
+    path_set_list_parser = path_set_sparser.add_parser('list', aliases=['l'])
+    path_set_list_parser.set_defaults(func=cmd.semex_list)
 
-    # regex add
-    regex_add_parser = regex_sparser.add_parser('add', aliases=['a'])
-    regex_add_parser.add_argument('name')
-    regex_add_parser.add_argument('regex-str', nargs='+')
-    regex_add_parser.set_defaults(func=cmd.regex_add)
+    # path-set add
+    path_set_add_parser = path_set_sparser.add_parser('add', aliases=['a'])
+    path_set_add_parser.add_argument('name')
+    path_set_add_parser.add_argument('semex-str', nargs='+')
+    path_set_add_parser.set_defaults(func=cmd.semex_add)
 
-    # regex toggle
-    regex_toggle_parser = regex_sparser.add_parser('toggle')
-    regex_toggle_parser.add_argument('name')
-    regex_toggle_parser.set_defaults(func=cmd.regex_toggle)
+    # path-set toggle
+    path_set_toggle_parser = path_set_sparser.add_parser('toggle')
+    path_set_toggle_parser.add_argument('name')
+    path_set_toggle_parser.set_defaults(func=cmd.semex_toggle)
 
-    # regex peek
-    regex_peek_parser = regex_sparser.add_parser('peek')
-    regex_peek_parser.add_argument('name')
-    regex_peek_parser.add_argument('node-ref')
-    regex_peek_parser.set_defaults(func=cmd.regex_peek)
+    # path-set peek
+    path_set_peek_parser = path_set_sparser.add_parser('peek')
+    path_set_peek_parser.add_argument('name')
+    path_set_peek_parser.add_argument('node-ref')
+    path_set_peek_parser.set_defaults(func=cmd.semex_peek)
 
     return command_parser
 
